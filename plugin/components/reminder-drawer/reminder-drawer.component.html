@@ -1,0 +1,134 @@
+<aside [class.open]="open">
+  <header>
+    <h2 translate>Reminder</h2>
+    <small class="text-muted" title="{{ lastUpdate | c8yDate }}">
+      {{ 'Last updated' | translate }}: {{ lastUpdate | amTimeAgo }}
+    </small>
+  </header>
+
+  <ul class="drawer-actions">
+    <li>
+      <button type="button" class="btn btn-primary" (click)="createReminder()">
+        <i [c8yIcon]="'plus-circle'"></i>
+        {{ 'Create Reminder' | translate }}
+      </button>
+    </li>
+  </ul>
+
+  <div class="body">
+    <ul class="reminder-group-list">
+      <!-- TODO toggle group visibility -->
+      <li *ngFor="let group of reminderGroups" class="reminder-group-item">
+        <header>
+          <span
+            class="count"
+            [class.text-danger]="group.status === reminderGroupStatus.due && group.count > 0"
+          >
+            {{ group.count || 0 }}
+          </span>
+          <em>{{ group.status | translate }}</em>
+        </header>
+
+        <ul class="reminder-list">
+          <!-- TODO add empty info -->
+          <ng-container *ngFor="let reminder of group.reminders">
+            <ng-template [ngTemplateOutlet]="reminderItem" [ngTemplateOutletContext]="{ reminder }">
+            </ng-template>
+          </ng-container>
+        </ul>
+      </li>
+    </ul>
+
+    <small class="text-muted" translate>
+      Cleared reminders are automatically deleted over time by the retention rules.
+    </small>
+  </div>
+
+  <!-- TODO provide option to configure links here
+  <footer>
+    <ul class="drawer-actions">
+      <li></li>
+    </ul>
+  </footer>
+  -->
+</aside>
+
+<!-- single reminder item template -->
+<ng-template #reminderItem let-reminder="reminder">
+  <li class="reminder-item" [class.text-muted]="reminder.status !== reminderStatus.active">
+    <header>
+      <i
+        class="status-icon"
+        title="Status: {{ reminder.status }}"
+        [c8yIcon]="
+          reminder.status === reminderStatus.active
+            ? 'bell'
+            : reminder.status === reminderStatus.acknowledged
+            ? 'bell-slash'
+            : 'check-circle'
+        "
+      ></i>
+
+      <ng-container *ngIf="reminder.status !== reminderStatus.cleared; else clearedDate">
+        <small
+          title="{{ 'Due' | translate }}: {{ reminder.time | c8yDate }}"
+          class="date"
+          [class.text-danger]="reminder.status === reminderStatus.active && reminder.diff > 0"
+        >
+          {{ reminder.time | amTimeAgo }}
+        </small>
+      </ng-container>
+      <ng-template #clearedDate>
+        <small class="date">
+          <span title="{{ 'Due' | translate }}: {{ reminder.lastUpdated | c8yDate }}">
+            {{ reminder.time | amTimeAgo }}
+          </span>
+          <span title="{{ 'Last Updated' | translate }}: {{ reminder.lastUpdated | c8yDate }}">
+            {{ reminder.lastUpdated | amTimeAgo }}
+          </span>
+        </small>
+      </ng-template>
+
+      <ul class="actions">
+        <button
+          *ngIf="reminder.status === reminderStatus.active"
+          type="button"
+          title="{{ 'Acknowledge the reminder' | translate }}"
+          class="btn btn-xs btn-hollow btn-success"
+          (click)="updateReminder(reminder, reminderStatus.acknowledged)"
+        >
+          <i [c8yIcon]="'bell-slash'"></i>
+        </button>
+        <button
+          *ngIf="reminder.status !== reminderStatus.cleared"
+          type="button"
+          title="{{ 'Clear the reminder' | translate }}"
+          class="btn btn-xs btn-hollow btn-danger"
+          (click)="updateReminder(reminder, reminderStatus.cleared)"
+        >
+          <i [c8yIcon]="'check-circle'"></i>
+        </button>
+      </ul>
+    </header>
+
+    <p>
+      {{ reminder.text }}
+    </p>
+
+    <footer>
+      <ng-container *ngIf="reminder.isGroup; else isDevice">
+        <a [routerLink]="['/group', reminder.source.id]">
+          <i [c8yIcon]="'c8y-group-open'"></i>
+          {{ reminder.source.name }}
+        </a>
+      </ng-container>
+      <ng-template #isDevice>
+        <a [routerLink]="['/device', reminder.source.id]">
+          <!-- arrows-dotted-left-right -->
+          <i [c8yIcon]="'c8y-device'"></i>
+          {{ reminder.source.name }}
+        </a>
+      </ng-template>
+    </footer>
+  </li>
+</ng-template>

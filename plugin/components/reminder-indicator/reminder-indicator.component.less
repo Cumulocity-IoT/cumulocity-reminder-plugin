@@ -1,0 +1,51 @@
+:host {
+  display: flex;
+  align-items: center;
+}
+
+em {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 36px;
+  height: 36px;
+  font-style: normal;
+  font-size: 16px;
+  border-radius: 8px;
+  background-color: var(--c8y-palette-status-success-light);
+  border: 0 solid var(--c8y-palette-status-success-light);
+  transition: all .3s ease-in-out;
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  z-index: 3;
+}
+
+button {
+  position: relative;
+  display: block;
+  margin: 0;
+  padding: 0 8px;
+  border: none;
+  background: none;
+
+  &.status-warning em {
+    border-color: var(--c8y-palette-status-warning-high);
+    background-color: var(--c8y-palette-status-warning-high);
+  }
+
+  &.status-danger em {
+    border-color: var(--c8y-palette-status-danger-light);
+    background-color: var(--c8y-palette-status-danger-light);
+  }
+
+  &.open em {
+    background-color: transparent;
+    border-width: 3px;
+  }
+}

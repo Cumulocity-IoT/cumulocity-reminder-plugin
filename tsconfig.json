@@ -1,0 +1,40 @@
+{
+  "extends": "@tsconfig/recommended/tsconfig.json",
+  "compileOnSave": false,
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist/out-tsc",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "target": "es6",
+    "module": "es2020",
+    "lib": ["dom", "es2015", "es2016"],
+    "paths": {
+      "@widget/*": ["widget/*"]
+    },
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "importHelpers": true,
+    "alwaysStrict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitAny": false,
+    "noImplicitThis": false,
+    "strictNullChecks": false,
+    "resolveJsonModule": true,
+    "emitDecoratorMetadata": false
+  },
+  "include": ["plugin/**/*", "app.module.ts", "index.ts", "ng1.ts"],
+  "exclude": ["node_modules", "dist", ".eslintrc.json", "tsconfig.json"],
+  "angularCompilerOptions": {
+    "enableIvy": true,
+    "strictTemplates": true,
+    "strictInjectionParameters": true
+  }
+}
