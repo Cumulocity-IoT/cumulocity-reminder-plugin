@@ -23,4 +23,4 @@ jobs:
       - run: npm ci
 
       - name: 🧪  Test
-         run: invoke test
+         run: npm run test
