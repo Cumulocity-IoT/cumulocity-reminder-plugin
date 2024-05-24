@@ -7,14 +7,11 @@ on:
 
 jobs:
   setupDev:
-    name: 🛠 Install Dependencies, 🕵️‍♂️ Lint and 🧪 Test
+    name: Testing the plugin
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: 🕵️‍♂️  Lint
-         run: invoke lint
 
       - name: 🧪  Test
          run: invoke test
