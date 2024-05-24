@@ -41,6 +41,7 @@ export class ReminderDrawerComponent implements OnDestroy {
 
   private subscriptions = new Subscription();
   private updateTimer: NodeJS.Timeout;
+  private rightDrawerOpen = false;
   private _open = false;
 
   constructor(
@@ -52,7 +53,10 @@ export class ReminderDrawerComponent implements OnDestroy {
     // check if the actual drawer was opened
     this.subscriptions.add(
       this.headerService.rightDrawerOpen$.subscribe((open) => {
+        this.rightDrawerOpen = open;
+
         if (open && this.open) {
+          // close the reminders, if the user menu opened
           this.open = false;
         }
       })
@@ -93,13 +97,19 @@ export class ReminderDrawerComponent implements OnDestroy {
     }
   }
 
-  private toggleRightDrawer(open: boolean) {
+  private toggleRightDrawer(open: boolean): void {
     const drawer = document.getElementsByClassName(REMINDER_MAIN_HEADER_CLASS)[0];
 
-    if (open) {
-      drawer.classList.add(REMINDER_DRAWER_OPEN_CLASS);
-    } else {
-      drawer.classList.remove(REMINDER_DRAWER_OPEN_CLASS);
+    if (open) drawer.classList.add(REMINDER_DRAWER_OPEN_CLASS);
+    else drawer.classList.remove(REMINDER_DRAWER_OPEN_CLASS);
+
+    if (this.rightDrawerOpen) {
+      // set user menu drawer status closed, if it is still open
+      this.headerService.closeRightDrawer();
+      setTimeout(() => {
+        // minimal delay needed to override closing animation and keep drawer open
+        if (open) drawer.classList.add(REMINDER_DRAWER_OPEN_CLASS);
+      }, 1);
     }
   }
 

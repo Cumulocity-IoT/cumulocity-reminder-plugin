@@ -11,17 +11,6 @@ import { TimeFieldType } from './components/time.formly/time.formly.component';
 import { DomService } from './services/dom.service';
 import { ReminderService } from './services/reminder.service';
 
-/*
-// TODOs
-- [ ] CRU(ack/clear)D permissions for reminder
-- [ ] check drawer setup
-- [ ] reactivate a reminder
-- [ ] list of all reminders
-- [ ] asset selection
-- [ ] audio feedback for new reminder
-- [ ] highlight newly added reminders
-*/
-
 @NgModule({
   imports: [
     CommonModule,
@@ -37,12 +26,6 @@ import { ReminderService } from './services/reminder.service';
     ReminderService,
     EventRealtimeService,
     DomService,
-    // hookDrawer({
-    //   position: 'right',
-    //   component: ReminderDrawerComponent,
-    //   priority: 1000,
-    //   id: 'reminder',
-    // }),
     hookAction({
       component: ReminderIndicatorComponent,
       priority: 0
