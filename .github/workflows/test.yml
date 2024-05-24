@@ -2,28 +2,8 @@ name: Node.js CI
 run-name: ${{ github.actor }} is testing the implementation
 
 on:
-  push:
-    branches: ['main']
   pull_request:
     branches: ['main']
-  workflow_dispatch:
-    inputs:
-      logcoverage:
-        description: 'Log test coverage'
-        required: false
-        type: boolean
-      skipbuild:
-        description: 'Skip build'
-        required: false
-        type: boolean
-      skiptest:
-        description: 'Skip tests'
-        required: false
-        type: boolean
-      skiplint:
-        description: 'Skip linting'
-        reqzured: false
-        type: boolean
 
 jobs:
   build:
@@ -40,12 +20,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-      - run: |
-          echo "Log Coverage: $LOGCOVERAGE"
-          echo "Skip Build: $SKIPBUILD"
-          echo "Skip Tests: $SKIPTESTS"
-          echo "Skip Linting: $SKIPLINT"
       - run: npm ci
+
       - run: npm run build --if-present
       - run: npm test --if-present
       # - run: npm lint --if-present
