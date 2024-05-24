@@ -2,6 +2,8 @@
 
 ---
 
+[![Node.js CI](https://github.com/SoftwareAG/cumulocity-reminder-plugin/actions/workflows/test.yml/badge.svg)](https://github.com/SoftwareAG/cumulocity-reminder-plugin/actions/workflows/test.yml)
+
 _TBD_
 
 ---
