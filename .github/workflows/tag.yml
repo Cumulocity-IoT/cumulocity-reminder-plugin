@@ -21,18 +21,44 @@ jobs:
           cache: 'npm'
       - run: npm ci
 
-      - run: npm run build --if-present
-      - run: npm test --if-present
-      # - run: npm lint --if-present
-
       - run: echo "PACKAGE_JSON=$(jq -c . < package.json)" >> $GITHUB_ENV
-      - name: Zip build
+
+      # - run: npm lint
+      - run: npm test
+      - run: npm run build
+
+      - run: echo "ARCHIVE_NAME=${{ fromJson(env.PACKAGE_JSON).name }}_${{ fromJson(env.PACKAGE_JSON).version }}.zip" >> $GITHUB_ENV
+
+      - name: Zip Build
         run: |
           cd ./dist/apps/${{ fromJson(env.PACKAGE_JSON).name }}
-          zip -r '../${{ fromJson(env.PACKAGE_JSON).name }}_${{ fromJson(env.PACKAGE_JSON).version }}.zip' ./
+          zip -r ../../${{ env.ARCHIVE_NAME }} ./
 
-      - name: Archive production artifacts
-        uses: actions/upload-artifact@v4
+      # - name: Archive production artifacts
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: tag_archive
+      #     path: dist/${{ env.ARCHIVE_NAME }}
+      #     retention-days: 1
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
-          name: build
-          path: dist/apps/*.zip
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/${{ env.ARCHIVE_NAME }}
+          asset_name: ${{ env.ARCHIVE_NAME }}
+          asset_content_type: application/zip
