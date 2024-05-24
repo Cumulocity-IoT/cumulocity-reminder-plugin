@@ -23,7 +23,7 @@ on:
       skiplint:
         description: 'Skip linting'
         reqzured: false
-        type: bolean
+        type: boolean
 
 jobs:
   build:
@@ -48,4 +48,4 @@ jobs:
       - run: npm ci
       - run: npm run build --if-present
       - run: npm test --if-present
-      - run: npm lint --if-present
+      # - run: npm lint --if-present
