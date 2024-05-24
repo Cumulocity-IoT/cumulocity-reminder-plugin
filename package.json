@@ -10,6 +10,10 @@
     "build": "c8ycli build",
     "postbuild": "cd ./dist/apps/${npm_package_name} && zip -r ../../${npm_package_name}_${npm_package_version}.zip ./",
     "deploy": "c8ycli deploy",
+    "test": "jest --passWithNoTests",
+    "test:clear": "jest --clearCache",
+    "test:watch": "jest --watch",
+    "test:coverage": "npm test -- --coverage",
     "locale-extract": "c8ycli locale-extract",
     "postinstall": "ngcc"
   },

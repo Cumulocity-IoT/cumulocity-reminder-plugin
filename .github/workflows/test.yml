@@ -1,0 +1,20 @@
+name: Testing
+run-name: ${{ github.actor }} is testing the implementation
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  setupDev:
+    name: 🛠 Install Dependencies, 🕵️‍♂️ Lint and 🧪 Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: 🕵️‍♂️  Lint
+         run: invoke lint
+
+      - name: 🧪  Test
+         run: invoke test
