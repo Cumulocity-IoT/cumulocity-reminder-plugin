@@ -12,19 +12,20 @@ import { Reminder, ReminderStatus, REMINDER_TEXT_LENGTH, REMINDER_TYPE } from '.
 
 @Component({
   selector: 'c8y-reminder-modal',
-  templateUrl: './reminder-modal.component.html'
+  templateUrl: './reminder-modal.component.html',
+  styleUrls: ['./reminder-modal.component.less']
 })
 export class ReminderModalComponent implements OnInit {
   // TODO selectable context
   isLoading = false;
-  asset!: IManagedObject;
+  asset!: Partial<IManagedObject>;
   form = new FormGroup({});
 
   reminder: Partial<Reminder> = {
-    source: {
-      id: undefined,
-      name: undefined
-    },
+    // source: {
+    //   id: undefined,
+    //   name: undefined
+    // },
     text: undefined,
     time: undefined,
     type: REMINDER_TYPE
@@ -33,15 +34,15 @@ export class ReminderModalComponent implements OnInit {
   fields: FormlyFieldConfig[] = [
     {
       fieldGroup: [
-        {
-          key: 'source.name',
-          type: 'input',
-          props: {
-            label: this.translateService.instant('Attach to'),
-            required: true,
-            disabled: true
-          }
-        },
+        // {
+        //   key: 'source.name',
+        //   type: 'input',
+        //   props: {
+        //     label: this.translateService.instant('Attach to'),
+        //     required: true,
+        //     disabled: true
+        //   }
+        // },
         {
           key: 'text',
           type: 'input',
@@ -82,12 +83,19 @@ export class ReminderModalComponent implements OnInit {
     this.bsModalRef.hide();
   }
 
+  assetSelected(asset: Partial<IManagedObject>): void {
+    this.asset = {
+      id: asset.id,
+      name: asset.name
+    };
+  }
+
   async submit(): Promise<void> {
     this.isLoading = true;
 
     const reminder: IEvent = {
       source: {
-        id: `${this.reminder.source.id}`
+        id: `${this.asset.id}`
       },
       type: REMINDER_TYPE,
       time: moment(this.reminder.time).toISOString(),
@@ -130,7 +138,11 @@ export class ReminderModalComponent implements OnInit {
 
   private getAssetFromRoute(route: ActivatedRouteSnapshot): IManagedObject {
     if (!route) console.error('No Route provided');
-    else return this.recursiveContextSearch(route);
+    else {
+      const mo = this.recursiveContextSearch(route);
+
+      if (has(mo, 'c8y_IsDevice') || has(mo, 'c8y_IsDeviceGroup')) return mo;
+    }
     return undefined;
   }
 }
