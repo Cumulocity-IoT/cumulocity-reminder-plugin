@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CoreModule, EventRealtimeService, hookAction } from '@c8y/ngx-components';
+import { AssetSelectorModule } from '@c8y/ngx-components/assets-navigator';
 import { FormlyModule } from '@ngx-formly/core';
 import { MomentModule } from 'ngx-moment';
 import { ReminderDrawerComponent } from './components/reminder-drawer/reminder-drawer.component';
@@ -16,6 +17,7 @@ import { ReminderService } from './services/reminder.service';
     CommonModule,
     CoreModule,
     RouterModule,
+    AssetSelectorModule,
     MomentModule,
     FormlyModule.forChild({
       types: [{ name: 'time', component: TimeFieldType }]
