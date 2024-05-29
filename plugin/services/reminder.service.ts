@@ -193,6 +193,7 @@ export class ReminderService {
 
   private handleReminderUpdate(message: Partial<RealtimeMessage<Reminder>>): Reminder {
     let reminders = cloneDeep(this.reminders);
+    let now = moment();
 
     if (message.realtimeAction === 'DELETE') return this.deleteRminderFromList(message, reminders);
 
@@ -208,7 +209,7 @@ export class ReminderService {
         break;
       case 'CREATE':
         reminders = [...reminders, reminder];
-        if (reminder.status === ReminderStatus.active) this.reminderCounter++;
+        if (reminder.status === ReminderStatus.active && moment(reminder.time) <= now) this.reminderCounter++;
         break;
     }
 

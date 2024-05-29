@@ -75,8 +75,8 @@ export class ReminderModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.asset = this.getAssetFromRoute(this.activatedRoute.snapshot);
-    this.reminder.source.id = this.asset.id;
-    this.reminder.source.name = String(this.asset.name) || '';
+    // this.reminder.source.id = this.asset.id;
+    // this.reminder.source.name = String(this.asset.name) || '';
   }
 
   close() {
