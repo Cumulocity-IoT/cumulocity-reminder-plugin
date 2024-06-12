@@ -34,6 +34,7 @@ export class ReminderService {
   private set reminders(reminders: Reminder[]) {
     this._reminders = reminders;
     this.reminders$.next(this._reminders);
+    this.updateCounter();
   }
 
   private get reminderCounter(): number {
@@ -249,5 +250,18 @@ export class ReminderService {
 
       return reminder;
     });
+  }
+
+  private updateCounter(): void {
+    const now = new Date().getTime();
+    let count = 0;
+    let dueDate: number;
+
+    this.reminders.forEach((reminder) => {
+      dueDate = new Date(reminder.time).getTime();
+      if (dueDate <= now && reminder.status === ReminderStatus.active) count++;
+    });
+
+    this.reminderCounter = count;
   }
 }

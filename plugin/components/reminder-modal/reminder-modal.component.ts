@@ -16,16 +16,15 @@ import { Reminder, ReminderStatus, REMINDER_TEXT_LENGTH, REMINDER_TYPE } from '.
   styleUrls: ['./reminder-modal.component.less']
 })
 export class ReminderModalComponent implements OnInit {
-  // TODO selectable context
   isLoading = false;
   asset!: Partial<IManagedObject>;
   form = new FormGroup({});
 
   reminder: Partial<Reminder> = {
-    // source: {
-    //   id: undefined,
-    //   name: undefined
-    // },
+    source: {
+      id: undefined,
+      name: undefined
+    },
     text: undefined,
     time: undefined,
     type: REMINDER_TYPE
@@ -75,8 +74,6 @@ export class ReminderModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.asset = this.getAssetFromRoute(this.activatedRoute.snapshot);
-    // this.reminder.source.id = this.asset.id;
-    // this.reminder.source.name = String(this.asset.name) || '';
   }
 
   close() {
@@ -84,6 +81,8 @@ export class ReminderModalComponent implements OnInit {
   }
 
   assetSelected(asset: Partial<IManagedObject>): void {
+    if (!asset || !asset.id) return;
+
     this.asset = {
       id: asset.id,
       name: asset.name
