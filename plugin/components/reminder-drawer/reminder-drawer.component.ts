@@ -129,14 +129,14 @@ export class ReminderDrawerComponent implements OnDestroy {
 
     clearTimeout(this.updateTimer);
 
-    if (!this.reminders.length) {
-      return;
-    }
+    if (!this.reminders.length) return;
 
     const closestReminder = sortBy(
       filter(this.reminders, (r) => r.status !== ReminderStatus.cleared && moment(r.time) > now),
       'time'
     )[0];
+
+    if (!closestReminder) return;
 
     this.updateTimer = setTimeout(() => this.digestReminders(this.reminders), moment(closestReminder.time).diff(now));
   }
