@@ -4,22 +4,10 @@
 
 <form [formGroup]="form" (submit)="submit()">
   <div class="modal-body">
-    <c8y-asset-selector-miller class="m-b-24"
-      [label]="'Assign to'"
-      [selectedDevice]="asset"
-      [isLoading]="isLoading"
-      [config]="{
-        groupsSelectable: true,
-        singleColumn: true,
-        columnHeaders: true,
-        showFilter: true,
-        search: true
-      }"
-      (onSelected)="assetSelected($event.items)"
-    ></c8y-asset-selector-miller>
-
     <formly-form [form]="form" [fields]="fields" [model]="reminder"></formly-form>
   </div>
+
+  <pre>{{ reminder | json }}</pre>
 
 
   <div class="modal-footer">

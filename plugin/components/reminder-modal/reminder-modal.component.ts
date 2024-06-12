@@ -12,8 +12,7 @@ import { Reminder, ReminderStatus, REMINDER_TEXT_LENGTH, REMINDER_TYPE } from '.
 
 @Component({
   selector: 'c8y-reminder-modal',
-  templateUrl: './reminder-modal.component.html',
-  styleUrls: ['./reminder-modal.component.less']
+  templateUrl: './reminder-modal.component.html'
 })
 export class ReminderModalComponent implements OnInit {
   isLoading = false;
@@ -33,15 +32,15 @@ export class ReminderModalComponent implements OnInit {
   fields: FormlyFieldConfig[] = [
     {
       fieldGroup: [
-        // {
-        //   key: 'source.name',
-        //   type: 'input',
-        //   props: {
-        //     label: this.translateService.instant('Attach to'),
-        //     required: true,
-        //     disabled: true
-        //   }
-        // },
+        {
+          key: 'source',
+          type: 'asset',
+          props: {
+            label: this.translateService.instant('Attach to'),
+            required: true,
+            asset: this.asset
+          }
+        },
         {
           key: 'text',
           type: 'input',
@@ -74,28 +73,18 @@ export class ReminderModalComponent implements OnInit {
 
   ngOnInit(): void {
     this.asset = this.getAssetFromRoute(this.activatedRoute.snapshot);
+    this.reminder.source = { id: this.asset.id, name: this.asset.name };
   }
 
   close() {
     this.bsModalRef.hide();
   }
 
-  assetSelected(asset: Partial<IManagedObject>): void {
-    if (!asset || !asset.id) return;
-
-    this.asset = {
-      id: asset.id,
-      name: asset.name
-    };
-  }
-
   async submit(): Promise<void> {
     this.isLoading = true;
 
     const reminder: IEvent = {
-      source: {
-        id: `${this.asset.id}`
-      },
+      source: this.reminder.source,
       type: REMINDER_TYPE,
       time: moment(this.reminder.time).toISOString(),
       text: this.reminder.text,

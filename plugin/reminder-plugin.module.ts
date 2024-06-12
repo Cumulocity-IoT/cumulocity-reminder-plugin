@@ -6,6 +6,7 @@ import { AssetSelectorModule } from '@c8y/ngx-components/assets-navigator';
 import { FormlyModule } from '@ngx-formly/core';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { MomentModule } from 'ngx-moment';
+import { AssetFieldType } from './components/asset.formly/asset.formly.component';
 import { ReminderDrawerComponent } from './components/reminder-drawer/reminder-drawer.component';
 import { ReminderIndicatorComponent } from './components/reminder-indicator/reminder-indicator.component';
 import { ReminderModalComponent } from './components/reminder-modal/reminder-modal.component';
@@ -21,11 +22,20 @@ import { ReminderService } from './services/reminder.service';
     AssetSelectorModule,
     MomentModule,
     FormlyModule.forChild({
-      types: [{ name: 'time', component: TimeFieldType }]
+      types: [
+        { name: 'time', component: TimeFieldType },
+        { name: 'asset', component: AssetFieldType }
+      ]
     }),
     TooltipModule
   ],
-  declarations: [ReminderDrawerComponent, ReminderIndicatorComponent, ReminderModalComponent, TimeFieldType],
+  declarations: [
+    ReminderDrawerComponent,
+    ReminderIndicatorComponent,
+    ReminderModalComponent,
+    TimeFieldType,
+    AssetFieldType
+  ],
   providers: [
     ReminderService,
     EventRealtimeService,
