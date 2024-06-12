@@ -1,7 +1,5 @@
 import { Component, OnDestroy } from '@angular/core';
 import { AlertService, HeaderService } from '@c8y/ngx-components';
-import { filter, sortBy } from 'lodash';
-import moment from 'moment';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import {
@@ -119,25 +117,5 @@ export class ReminderDrawerComponent implements OnDestroy {
     this.reminders = reminders;
     this.reminderGroups = this.reminderService.groupReminders(reminders);
     this.lastUpdate = new Date();
-    this.setUpdateTimer();
-  }
-
-  private setUpdateTimer(): void {
-    // TODO update indicator
-    // - move update timer to service?
-    const now = moment();
-
-    clearTimeout(this.updateTimer);
-
-    if (!this.reminders.length) return;
-
-    const closestReminder = sortBy(
-      filter(this.reminders, (r) => r.status !== ReminderStatus.cleared && moment(r.time) > now),
-      'time'
-    )[0];
-
-    if (!closestReminder) return;
-
-    this.updateTimer = setTimeout(() => this.digestReminders(this.reminders), moment(closestReminder.time).diff(now));
   }
 }

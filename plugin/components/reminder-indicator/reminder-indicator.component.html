@@ -1,4 +1,5 @@
-<button type="button" class="{{ status }}" [class.open]="open" (click)="toggleDrawer()">
+<button type="button" class="{{ status }}" [tooltip]="tooltipText" [class.open]="open"
+  (click)="toggleDrawer()">
   <em>
     <ng-container *ngIf="open; else showText">
       <i [c8yIcon]="'close'"></i>

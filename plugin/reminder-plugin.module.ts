@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { CoreModule, EventRealtimeService, hookAction } from '@c8y/ngx-components';
 import { AssetSelectorModule } from '@c8y/ngx-components/assets-navigator';
 import { FormlyModule } from '@ngx-formly/core';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { MomentModule } from 'ngx-moment';
 import { ReminderDrawerComponent } from './components/reminder-drawer/reminder-drawer.component';
 import { ReminderIndicatorComponent } from './components/reminder-indicator/reminder-indicator.component';
@@ -21,7 +22,8 @@ import { ReminderService } from './services/reminder.service';
     MomentModule,
     FormlyModule.forChild({
       types: [{ name: 'time', component: TimeFieldType }]
-    })
+    }),
+    TooltipModule
   ],
   declarations: [ReminderDrawerComponent, ReminderIndicatorComponent, ReminderModalComponent, TimeFieldType],
   providers: [

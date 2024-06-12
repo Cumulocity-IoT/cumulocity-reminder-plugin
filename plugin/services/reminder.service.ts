@@ -1,10 +1,10 @@
 import { ComponentRef, Injectable } from '@angular/core';
 import { EventService, IEvent, IResult } from '@c8y/client';
 import { EventRealtimeService, RealtimeMessage } from '@c8y/ngx-components';
-import { cloneDeep, has, sortBy } from 'lodash';
+import { cloneDeep, filter as _filter, has, sortBy } from 'lodash';
 import moment from 'moment';
 import { BehaviorSubject, Subscription } from 'rxjs';
-import { filter, map } from 'rxjs/operators';
+import { map, filter } from 'rxjs/operators';
 import { ReminderDrawerComponent } from '../components/reminder-drawer/reminder-drawer.component';
 import {
   Reminder,
@@ -25,6 +25,7 @@ export class ReminderService {
   private drawerRef: ComponentRef<unknown>;
   private drawer: ReminderDrawerComponent;
   private subscription = new Subscription();
+  private updateTimer: NodeJS.Timeout;
   private _reminderCounter = 0;
   private _reminders: Reminder[] = [];
 
@@ -34,6 +35,8 @@ export class ReminderService {
   private set reminders(reminders: Reminder[]) {
     this._reminders = reminders;
     this.reminders$.next(this._reminders);
+    this.updateCounter();
+    this.setUpdateTimer();
   }
 
   private get reminderCounter(): number {
@@ -249,5 +252,36 @@ export class ReminderService {
 
       return reminder;
     });
+  }
+
+  private updateCounter(): void {
+    const now = new Date().getTime();
+    let count = 0;
+    let dueDate: number;
+
+    this.reminders.forEach((reminder) => {
+      dueDate = new Date(reminder.time).getTime();
+      if (dueDate <= now && reminder.status === ReminderStatus.active) count++;
+    });
+
+    this.reminderCounter = count;
+  }
+
+  private setUpdateTimer(): void {
+    const now = moment();
+
+    clearTimeout(this.updateTimer);
+
+    if (!this.reminders || !this.reminders.length) return;
+
+    const dueReminders = _filter(this.reminders, (r) => r.status !== ReminderStatus.cleared && moment(r.time) > now);
+    const closestReminder: Reminder = sortBy(dueReminders, 'time')[0];
+
+    if (!closestReminder) return;
+
+    this.updateTimer = setTimeout(
+      () => (this.reminders = this.digestReminders(this.reminders)),
+      moment(closestReminder.time).diff(now)
+    );
   }
 }
