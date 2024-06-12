@@ -101,15 +101,19 @@
         </button>
         <button
           *ngIf="reminder.status !== reminderStatus.cleared"
-          type="button" title="{{ 'Clear the reminder' | translate }}"
+          type="button"
+          title="{{ 'Clear the reminder' | translate }}"
           class="btn btn-xs btn-hollow btn-danger"
           (click)="updateReminder(reminder, reminderStatus.cleared)"
         >
           <i [c8yIcon]="'check-circle'"></i>
         </button>
         <button
-          *ngIf="reminder.status === reminderStatus.cleared" type="button" title="{{ 'Reactivate the reminder' | translate }}"
-          class="btn btn-xs btn-hollow btn-primary" (click)="updateReminder(reminder, reminderStatus.active)">
+          *ngIf="reminder.status === reminderStatus.cleared"
+          type="button"
+          title="{{ 'Reactivate the reminder' | translate }}"
+          class="btn btn-xs btn-hollow btn-primary"
+          (click)="updateReminder(reminder, reminderStatus.active)">
           <i [c8yIcon]="'bell'"></i>
         </button>
       </ul>
