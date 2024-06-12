@@ -23,10 +23,11 @@ export class ReminderDrawerComponent implements OnDestroy {
   lastUpdate: Date;
   reminders: Reminder[] = [];
   reminderGroups: ReminderGroup[] = [];
-
+  
   // for template
   reminderStatus = ReminderStatus;
   reminderGroupStatus = ReminderGroupStatus;
+  groupIsExpanded: boolean[] = [true, true, false];
 
   get open(): boolean {
     return this._open;
