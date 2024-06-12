@@ -1,6 +1,6 @@
 {
   "name": "cumulocity-reminder-plugin",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "",
   "scripts": {
     "start": "c8ycli server -u https://psfactory.eu-latest.cumulocity.com",
