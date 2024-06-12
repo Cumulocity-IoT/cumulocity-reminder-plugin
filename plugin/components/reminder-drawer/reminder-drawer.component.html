@@ -17,19 +17,31 @@
 
   <div class="body">
     <ul class="reminder-group-list">
-      <!-- TODO toggle group visibility -->
-      <li *ngFor="let group of reminderGroups" class="reminder-group-item">
+      <li *ngFor="let group of reminderGroups; let i = index" class="reminder-group-item">
         <header>
-          <span
-            class="count"
-            [class.text-danger]="group.status === reminderGroupStatus.due && group.count > 0"
+          <button type="button"
+            aria-controls="collapseBasic"
+            class="btn btn-clean"
+            [attr.aria-expanded]="groupIsExpanded[i]"
+            (click)="groupIsExpanded[i] = !groupIsExpanded[i]"
           >
-            {{ group.count || 0 }}
-          </span>
-          <em>{{ group.status | translate }}</em>
+            <span
+              class="count"
+              [class.text-danger]="group.status === reminderGroupStatus.due && group.count > 0"
+              >
+              {{ group.count || 0 }}
+            </span>
+            <em>{{ group.status | translate }}</em>
+            <i [c8yIcon]="'expand-arrow'" [class.expanded]="groupIsExpanded[i]"></i>
+          </button>
         </header>
 
-        <ul class="reminder-list">
+        <ul
+          id="collapseBasic"
+          class="reminder-list"
+          [collapse]="!groupIsExpanded[i]"
+          [isAnimated]="true"
+        >
           <!-- TODO add empty info -->
           <ng-container *ngFor="let reminder of group.reminders">
             <ng-template [ngTemplateOutlet]="reminderItem" [ngTemplateOutletContext]="{ reminder }">

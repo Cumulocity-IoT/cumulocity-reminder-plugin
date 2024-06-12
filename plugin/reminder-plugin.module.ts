@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { CoreModule, EventRealtimeService, hookAction } from '@c8y/ngx-components';
 import { AssetSelectorModule } from '@c8y/ngx-components/assets-navigator';
 import { FormlyModule } from '@ngx-formly/core';
+import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { MomentModule } from 'ngx-moment';
 import { AssetFieldType } from './components/asset.formly/asset.formly.component';
@@ -27,7 +28,8 @@ import { ReminderService } from './services/reminder.service';
         { name: 'asset', component: AssetFieldType }
       ]
     }),
-    TooltipModule
+    TooltipModule,
+    CollapseModule
   ],
   declarations: [
     ReminderDrawerComponent,

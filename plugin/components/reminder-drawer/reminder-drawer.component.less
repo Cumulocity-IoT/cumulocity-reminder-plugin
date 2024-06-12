@@ -81,6 +81,20 @@ aside {
     padding: 8px 16px;
     box-shadow: inset 0 -1px 0 var(--c8y-component-border-color, var(--c8y-root-component-border-color));
 
+    > button {
+      flex: 1;
+      display: flex;
+      align-items: center;
+
+      i {
+        transition: all .3s ease-in-out;
+
+        &.expanded {
+          transform: rotate(180deg);
+        }
+      }
+    }
+
     .count {
       margin-right: 8px;
       font-weight: bold;
@@ -88,6 +102,7 @@ aside {
 
     em {
       font-style: normal;
+      flex: 1 1 auto;
     }
   }
 
