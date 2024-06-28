@@ -8,11 +8,16 @@ import { TranslateService } from '@ngx-translate/core';
 import { cloneDeep, has } from 'lodash';
 import moment from 'moment';
 import { BsModalRef } from 'ngx-bootstrap/modal';
-import { Reminder, ReminderStatus, REMINDER_TEXT_LENGTH, REMINDER_TYPE } from '../../reminder.model';
+import {
+  Reminder,
+  ReminderStatus,
+  REMINDER_TEXT_LENGTH,
+  REMINDER_TYPE,
+} from '../../reminder.model';
 
 @Component({
   selector: 'c8y-reminder-modal',
-  templateUrl: './reminder-modal.component.html'
+  templateUrl: './reminder-modal.component.html',
 })
 export class ReminderModalComponent implements OnInit {
   isLoading = false;
@@ -20,13 +25,10 @@ export class ReminderModalComponent implements OnInit {
   form = new FormGroup({});
 
   reminder: Partial<Reminder> = {
-    source: {
-      id: undefined,
-      name: undefined
-    },
+    source: undefined,
     text: undefined,
     time: undefined,
-    type: REMINDER_TYPE
+    type: REMINDER_TYPE,
   };
 
   fields: FormlyFieldConfig[] = [
@@ -38,8 +40,8 @@ export class ReminderModalComponent implements OnInit {
           props: {
             label: this.translateService.instant('Attach to'),
             required: true,
-            asset: this.asset
-          }
+            asset: this.asset,
+          },
         },
         {
           key: 'text',
@@ -47,20 +49,20 @@ export class ReminderModalComponent implements OnInit {
           props: {
             label: this.translateService.instant('Message'),
             required: true,
-            maxLength: REMINDER_TEXT_LENGTH
+            maxLength: REMINDER_TEXT_LENGTH,
             // TODO show max length & used chars
-          }
+          },
         },
         {
           key: 'time',
           type: 'time',
           props: {
             label: this.translateService.instant('Remind me on'),
-            required: true
-          }
-        }
-      ]
-    }
+            required: true,
+          },
+        },
+      ],
+    },
   ];
 
   constructor(
@@ -72,8 +74,12 @@ export class ReminderModalComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.asset = this.getAssetFromRoute(this.activatedRoute.snapshot);
-    this.reminder.source = { id: this.asset.id, name: this.asset.name };
+    const asset = this.getAssetFromRoute(this.activatedRoute.snapshot);
+
+    if (asset && asset.id) {
+      this.asset = asset;
+      this.reminder.source = { id: asset.id, name: this.asset['name'] };
+    }
   }
 
   close() {
@@ -83,17 +89,19 @@ export class ReminderModalComponent implements OnInit {
   async submit(): Promise<void> {
     this.isLoading = true;
 
+    if (!this.reminder.source || !this.reminder.text) return;
+
     const reminder: IEvent = {
       source: this.reminder.source,
       type: REMINDER_TYPE,
       time: moment(this.reminder.time).toISOString(),
       text: this.reminder.text,
-      status: ReminderStatus.active
+      status: ReminderStatus.active,
     };
 
-    if (has(this.asset, 'c8y_IsDeviceGroup')) reminder.isGroup = {};
+    if (has(this.asset, 'c8y_IsDeviceGroup')) reminder['isGroup'] = {};
 
-    let request: IResult<IEvent>;
+    let request: IResult<IEvent> | undefined;
 
     try {
       request = await this.eventService.create(reminder);
@@ -103,34 +111,52 @@ export class ReminderModalComponent implements OnInit {
 
     this.isLoading = false;
 
+    if (!request) return;
+
     if (request && request.res.status === 201) {
-      this.alertService.success(this.translateService.instant('Reminder created'));
+      this.alertService.success(
+        this.translateService.instant('Reminder created')
+      );
       this.close();
     } else {
-      this.alertService.danger(this.translateService.instant('Could not create reminder'), await request.res.text());
+      this.alertService.danger(
+        this.translateService.instant('Could not create reminder'),
+        await request.res.text()
+      );
     }
   }
 
-  private recursiveContextSearch(route: ActivatedRouteSnapshot, numberOfCheckedParents = 0): IManagedObject {
-    let context: { contextData: IManagedObject } = undefined;
+  private recursiveContextSearch(
+    route: ActivatedRouteSnapshot,
+    numberOfCheckedParents = 0
+  ): IManagedObject | undefined {
+    let context: { contextData: IManagedObject } | undefined = undefined;
 
-    if (route?.data?.contextData) context = route.data as { contextData: IManagedObject };
-    else if (route?.firstChild?.data?.contextData) context = route.firstChild.data as { contextData: IManagedObject };
+    if (route?.data['contextData']) {
+      context = route.data as { contextData: IManagedObject };
+    } else if (route?.firstChild?.data['contextData']) {
+      context = route.firstChild.data as { contextData: IManagedObject };
+    }
 
-    if (context?.contextData) return cloneDeep(context.contextData);
-    else
-      return route.parent && numberOfCheckedParents < 3
-        ? this.recursiveContextSearch(route.parent, numberOfCheckedParents + 1)
-        : undefined;
+    if (!context) return undefined;
+
+    return context['contextData']
+      ? cloneDeep(context['contextData'])
+      : route.parent && numberOfCheckedParents < 3
+      ? this.recursiveContextSearch(route.parent, numberOfCheckedParents + 1)
+      : undefined;
   }
 
-  private getAssetFromRoute(route: ActivatedRouteSnapshot): IManagedObject {
+  private getAssetFromRoute(
+    route: ActivatedRouteSnapshot
+  ): IManagedObject | undefined {
     if (!route) console.error('No Route provided');
     else {
       const mo = this.recursiveContextSearch(route);
 
       if (has(mo, 'c8y_IsDevice') || has(mo, 'c8y_IsDeviceGroup')) return mo;
     }
+
     return undefined;
   }
 }

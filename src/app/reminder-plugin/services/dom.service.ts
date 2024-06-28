@@ -5,7 +5,7 @@ import {
   EmbeddedViewRef,
   Injectable,
   Injector,
-  Type
+  Type,
 } from '@angular/core';
 
 @Injectable()
@@ -17,11 +17,14 @@ export class DomService {
   ) {}
 
   appendComponentToBody(component: Type<unknown>): ComponentRef<unknown> {
-    const componentRef = this.componentFactoryResolver.resolveComponentFactory(component).create(this.injector);
+    const componentRef = this.componentFactoryResolver
+      .resolveComponentFactory(component)
+      .create(this.injector);
 
     this.appRef.attachView(componentRef.hostView);
 
-    const domElem = (componentRef.hostView as EmbeddedViewRef<any>).rootNodes[0] as HTMLElement;
+    const domElem = (componentRef.hostView as EmbeddedViewRef<any>)
+      .rootNodes[0] as HTMLElement;
 
     document.body.appendChild(domElem);
 

@@ -1,19 +1,19 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TranslateService } from '@ngx-translate/core';
+import { Subscription } from 'rxjs';
 import { REMINDER_MAX_COUNTER } from '../../reminder.model';
 import { ReminderService } from '../../services/reminder.service';
-import { Subscription } from 'rxjs';
-import { TranslateService } from '@ngx-translate/core';
 
 const ReminderStatus = {
   default: '',
   warning: 'status-warning',
-  danger: 'status-danger'
+  danger: 'status-danger',
 };
 
 @Component({
   selector: 'c8y-reminder-indicator',
   templateUrl: './reminder-indicator.component.html',
-  styleUrls: ['./reminder-indicator.component.less']
+  styleUrls: ['./reminder-indicator.component.less'],
 })
 export class ReminderIndicatorComponent implements OnInit, OnDestroy {
   open = false;
@@ -24,17 +24,20 @@ export class ReminderIndicatorComponent implements OnInit, OnDestroy {
 
   private subscription = new Subscription();
 
-  constructor(private reminderService: ReminderService, private translateService: TranslateService) {}
+  constructor(
+    private reminderService: ReminderService,
+    private translateService: TranslateService
+  ) {}
 
   ngOnInit(): void {
-    // open status
+    // use open status from service
     this.subscription.add(
-      this.reminderService.open$.subscribe((open) => {
+      this.reminderService.open$?.subscribe((open) => {
         this.open = open;
       })
     );
 
-    // reminder counter
+    // use reminder counter from service
     this.subscription.add(
       this.reminderService.reminderCounter$.subscribe((counter) => {
         this.setCounterStatus(counter);
