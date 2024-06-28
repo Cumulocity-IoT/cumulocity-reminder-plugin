@@ -8,7 +8,7 @@ import {
   ReminderGroupStatus,
   ReminderStatus,
   REMINDER_DRAWER_OPEN_CLASS,
-  REMINDER_MAIN_HEADER_CLASS
+  REMINDER_MAIN_HEADER_CLASS,
 } from '../../reminder.model';
 import { ReminderService } from '../../services/reminder.service';
 import { ReminderModalComponent } from '../reminder-modal/reminder-modal.component';
@@ -16,14 +16,14 @@ import { ReminderModalComponent } from '../reminder-modal/reminder-modal.compone
 @Component({
   selector: 'c8y-reminder-drawer',
   templateUrl: './reminder-drawer.component.html',
-  styleUrls: ['./reminder-drawer.component.less']
+  styleUrl: './reminder-drawer.component.less',
 })
 export class ReminderDrawerComponent implements OnDestroy {
   open$ = new BehaviorSubject<boolean>(this.open);
-  lastUpdate: Date;
   reminders: Reminder[] = [];
   reminderGroups: ReminderGroup[] = [];
-  
+  lastUpdate?: Date;
+
   // for template
   reminderStatus = ReminderStatus;
   reminderGroupStatus = ReminderGroupStatus;
@@ -39,7 +39,7 @@ export class ReminderDrawerComponent implements OnDestroy {
   }
 
   private subscriptions = new Subscription();
-  private updateTimer: NodeJS.Timeout;
+  private updateTimer?: NodeJS.Timeout;
   private rightDrawerOpen = false;
   private _open = false;
 
@@ -61,7 +61,11 @@ export class ReminderDrawerComponent implements OnDestroy {
       })
     );
 
-    this.subscriptions.add(this.reminderService.reminders$.subscribe((reminders) => this.digestReminders(reminders)));
+    this.subscriptions.add(
+      this.reminderService.reminders$.subscribe((reminders) =>
+        this.digestReminders(reminders)
+      )
+    );
   }
 
   ngOnDestroy(): void {
@@ -80,11 +84,14 @@ export class ReminderDrawerComponent implements OnDestroy {
 
   createReminder(): void {
     this.modalService.show(ReminderModalComponent, {
-      class: 'modal-sm'
+      class: 'modal-sm',
     });
   }
 
-  async updateReminder(reminder: Reminder, status: Reminder['status']): Promise<void> {
+  async updateReminder(
+    reminder: Reminder,
+    status: Reminder['status']
+  ): Promise<void> {
     reminder.status = status;
 
     const { res } = await this.reminderService.update(reminder);
@@ -97,7 +104,9 @@ export class ReminderDrawerComponent implements OnDestroy {
   }
 
   private toggleRightDrawer(open: boolean): void {
-    const drawer = document.getElementsByClassName(REMINDER_MAIN_HEADER_CLASS)[0];
+    const drawer = document.getElementsByClassName(
+      REMINDER_MAIN_HEADER_CLASS
+    )[0];
 
     if (open) drawer.classList.add(REMINDER_DRAWER_OPEN_CLASS);
     else drawer.classList.remove(REMINDER_DRAWER_OPEN_CLASS);

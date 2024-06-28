@@ -4,6 +4,6 @@ import { FieldType, FieldTypeConfig } from '@ngx-formly/core';
 @Component({
   selector: 'formly-asset',
   templateUrl: './asset.formly.component.html',
-  styleUrls: ['./asset.formly.component.less']
+  styleUrl: './asset.formly.component.less',
 })
 export class AssetFieldType extends FieldType<FieldTypeConfig> {}
