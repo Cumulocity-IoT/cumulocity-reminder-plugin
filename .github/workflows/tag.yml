@@ -4,7 +4,7 @@ run-name: ${{ github.actor }} set a tag
 on:
   push:
     tags:
-      - '*'
+      - "*"
       # - 'v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
@@ -14,11 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js 16
+      - name: Use Node.js 18
         uses: actions/setup-node@v3
         with:
-          node-version: 16.x
-          cache: 'npm'
+          node-version: 18.x
+          cache: "npm"
       - run: npm ci
 
       - run: echo "PACKAGE_JSON=$(jq -c . < package.json)" >> $GITHUB_ENV
