@@ -6,10 +6,6 @@
     "skipLibCheck": true,
     "strict": false
   },
-  "files": [
-    "src/main.ts"
-  ],
-  "include": [
-    "src/**/*.ts"
-  ]
+  "files": ["src/main.ts"],
+  "include": ["src/**/*.ts"]
 }

@@ -17,7 +17,8 @@
     "cumulocity",
     "cumulocity-iot",
     "cumulocity-1020",
-    "kpi"
+    "cumulocity-ui-plugin",
+    "reminder"
   ],
   "author": "SoftwareAG",
   "license": "Apache-2.0",

@@ -1,10 +1,10 @@
 import { ComponentRef, Injectable } from '@angular/core';
 import { EventService, IEvent, IResult } from '@c8y/client';
 import { EventRealtimeService, RealtimeMessage } from '@c8y/ngx-components';
-import { cloneDeep, filter as _filter, has, isSet, sortBy } from 'lodash';
+import { cloneDeep, filter as _filter, has, sortBy } from 'lodash';
 import moment from 'moment';
 import { BehaviorSubject, Subscription } from 'rxjs';
-import { map, filter } from 'rxjs/operators';
+import { filter, map } from 'rxjs/operators';
 import { ReminderDrawerComponent } from '../components/reminder-drawer/reminder-drawer.component';
 import {
   Reminder,
