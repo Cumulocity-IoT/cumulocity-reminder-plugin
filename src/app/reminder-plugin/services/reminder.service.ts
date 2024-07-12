@@ -125,6 +125,9 @@ export class ReminderService {
       status: reminder.status,
     };
 
+    if (reminder.status === ReminderStatus.cleared) event.isCleared = {};
+    else event.isCleared = null;
+
     return (await this.eventService.update(event)) as IResult<Reminder>;
   }
 
