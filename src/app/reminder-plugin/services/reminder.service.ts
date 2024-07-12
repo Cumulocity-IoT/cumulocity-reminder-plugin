@@ -125,8 +125,8 @@ export class ReminderService {
       status: reminder.status,
     };
 
-    if (reminder.status === ReminderStatus.cleared) event.isCleared = {};
-    else event.isCleared = null;
+    // (un)set `isCleared` fragment to supoprt using retention rules for cleared reminders
+    event.isCleared = (reminder.status === ReminderStatus.cleared) ? {} : null;
 
     return (await this.eventService.update(event)) as IResult<Reminder>;
   }
