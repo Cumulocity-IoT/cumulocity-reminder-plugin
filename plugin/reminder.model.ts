@@ -25,6 +25,7 @@ export interface Reminder extends IEvent {
   status: ReminderStatus;
   isGroup?: object;
   diff?: number;
+  isCleared?: object;
 }
 
 export interface ReminderGroup {
