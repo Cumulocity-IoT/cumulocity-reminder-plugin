@@ -6,4 +6,10 @@ import { FieldType, FieldTypeConfig } from '@ngx-formly/core';
   templateUrl: './asset.formly.component.html',
   styleUrls: ['./asset.formly.component.less']
 })
-export class AssetFieldType extends FieldType<FieldTypeConfig> {}
+export class AssetFieldType extends FieldType<FieldTypeConfig> {
+  clearSelection(): void {
+    this.formControl.setValue(null);
+    this.formControl.markAsDirty();
+    this.options.updateInitialValue({});
+  }
+}

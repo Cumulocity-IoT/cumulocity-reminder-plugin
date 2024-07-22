@@ -1,6 +1,49 @@
 :host ::ng-deep {
-  .miller-column__selection {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+  .miller-view-wrapper{
+    position: relative;
+    margin-bottom: 24px;
+
+    .miller-column__header {
+      position: relative;
+      margin-top: 34px !important;
+      align-items: center;
+      justify-content: space-between;
+
+      p {
+         margin: 0 !important;
+      }
+
+      > :nth-child(2) {
+        position: absolute;
+        top: 3em;
+        right: 8px;
+        left: 8px;
+      }
+    }
+
+    .miller-column {
+      c8y-asset-selector > div {
+        display: flex;
+      }
+
+      .p-absolute {
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 0 4px !important;
+      }
+
+      + .miller-column .miller-column__header {
+        margin-top: 0 !important;
+        padding-bottom: 3.1rem;
+      }
+    }
   }
+}
+
+.no-asset div {
+  justify-content: space-between;
+  align-items: center;
 }
