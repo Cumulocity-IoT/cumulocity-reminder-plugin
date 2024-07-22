@@ -1,14 +1,24 @@
-<c8y-asset-selector-miller
-  class="m-b-24"
-  [selectedDevice]="field.props.asset"
-  [config]="{
-    groupsSelectable: true,
-    singleColumn: true,
-    columnHeaders: true,
-    showFilter: true,
-    search: true,
-    label: field.props.label
-  }"
-  [formControl]="formControl"
-  [formlyAttributes]="field">
-</c8y-asset-selector-miller>
+<ng-container *ngIf="!model.source; else assetDetails">
+  <c8y-asset-selector-miller class="m-b-24" [selectedDevice]="field.props.asset" [config]="{
+      groupsSelectable: true,
+      singleColumn: true,
+      columnHeaders: true,
+      showFilter: true,
+      search: true,
+      label: field.props.label
+    }" [formControl]="formControl" [formlyAttributes]="field">
+  </c8y-asset-selector-miller>
+</ng-container>
+
+<ng-template #assetDetails>
+  <div class="form-group no-asset">
+    <label>Selected asset</label>
+
+    <div class="d-flex">
+      <span>
+        {{ model.source.name }} <span class="text-muted">#{{ model.source.id }}</span>
+      </span>
+      <button type="button" class="btn btn-primary" (click)="clearSelection()">{{ 'Change' | translate }}</button>
+    </div>
+  </div>
+</ng-template>

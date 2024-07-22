@@ -12,7 +12,8 @@ import { Reminder, ReminderStatus, REMINDER_TEXT_LENGTH, REMINDER_TYPE } from '.
 
 @Component({
   selector: 'c8y-reminder-modal',
-  templateUrl: './reminder-modal.component.html'
+  templateUrl: './reminder-modal.component.html',
+  styleUrls: ['./reminder-modal.component.less']
 })
 export class ReminderModalComponent implements OnInit {
   isLoading = false;
