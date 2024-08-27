@@ -6,18 +6,24 @@ import { Subject } from "rxjs";
 export class LocalStorageService {
   storage$: Subject<any> = new Subject();
 
-  get debounceTime(): number { return this._debounceTime; }
+  get debounceTime(): number {
+    return this._debounceTime;
+  }
   set debounceTime(delayInMS) {
     this._debounceTime = delayInMS;
     this.setStorageDebounce(delayInMS);
   }
 
-  private storageUpdateDebounce!: DebouncedFuncLeading<(value: any) => void>;
   private _debounceTime = 100;
+  private storageUpdateDebounce!: DebouncedFuncLeading<(value: any) => void>;
 
   constructor() {
     this.setStorageDebounce();
     this.listenToStorageChanges();
+  }
+
+  delete(key: string): void {
+    localStorage.removeItem(key);
   }
 
   destroy(): void {
@@ -39,10 +45,6 @@ export class LocalStorageService {
     localStorage.setItem(key, JSON.stringify(value));
 
     return value;
-  }
-
-  delete(key: string): void {
-    localStorage.removeItem(key);
   }
 
   private listenToStorageChanges(): void {

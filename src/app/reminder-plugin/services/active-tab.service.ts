@@ -31,6 +31,15 @@ export class ActiveTabService {
     return this.tabId === this.localStorageService.get(ACTIVE_TAB_STORAGE_KEY);
   }
 
+  private handleStorageUpdate(): void {
+    const isActive =
+      this.localStorageService.get(ACTIVE_TAB_STORAGE_KEY) === this.tabId;
+
+    // update lastActive, if it has changed
+    if (isActive !== this.lastActive$.getValue())
+      this.lastActive$.next(isActive);
+  }
+
   private setActiveTabListener(): void {
     // focus » active, lastActive via localStorage (via setCurrentTabActive)
     window.onfocus = () => {
@@ -46,14 +55,5 @@ export class ActiveTabService {
 
   private setCurrentTabActive(): void {
     this.localStorageService.set(ACTIVE_TAB_STORAGE_KEY, this.tabId);
-  }
-
-  private handleStorageUpdate(): void {
-    const isActive =
-      this.localStorageService.get(ACTIVE_TAB_STORAGE_KEY) === this.tabId;
-
-    // update lastActive, if it has changed
-    if (isActive !== this.lastActive$.getValue())
-      this.lastActive$.next(isActive);
   }
 }
