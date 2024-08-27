@@ -20,6 +20,7 @@ import {
   ReminderStatus,
   ReminderType,
   REMINDER_INITIAL_QUERY_SIZE,
+  REMINDER_LOCAL_STORAGE_FILTER,
   REMINDER_TENENAT_OPTION_CATEGORY,
   REMINDER_TENENAT_OPTION_TYPE_KEY,
   REMINDER_TYPE,
@@ -36,6 +37,10 @@ export class ReminderService {
     return this._types;
   }
 
+  get filters(): ReminderGroupFilter {
+    return this._filters;
+  }
+
   private subscription = new Subscription();
   private drawerRef?: ComponentRef<unknown>;
   private drawer?: ReminderDrawerComponent;
@@ -43,6 +48,7 @@ export class ReminderService {
   private _reminderCounter = 0;
   private _reminders: Reminder[] = [];
   private _types: ReminderType[] = [];
+  private _filters: ReminderGroupFilter;
 
   private get reminders(): Reminder[] {
     return this._reminders;
@@ -73,6 +79,7 @@ export class ReminderService {
   async init(): Promise<void> {
     if (this.drawer) return;
 
+    this.loadFilterConfig();
     this._types = await this.fetchReminderTypes();
     void this.fetchActiveReminderCounter();
     this.createDrawer();
@@ -99,7 +106,7 @@ export class ReminderService {
 
   groupReminders(
     reminders: Reminder[],
-    filters?: ReminderGroupFilter
+    filters = this._filters
   ): ReminderGroup[] {
     let dueDate: number;
     const now = new Date().getTime();
@@ -140,11 +147,26 @@ export class ReminderService {
     upcoming.reminders = sortBy(upcoming.reminders, ['time']);
     cleared.reminders = sortBy(cleared.reminders, ['lastUpdated']).reverse();
 
+    this._filters = filters;
+
     return this.applyFilters([due, upcoming, cleared], filters);
   }
 
   clear(): void {
     this.reminders = [];
+  }
+
+  storeFilterConfig(): void {
+    if (!this._filters) this.resetFilterConfig();
+
+    localStorage.setItem(
+      REMINDER_LOCAL_STORAGE_FILTER,
+      JSON.stringify(this._filters)
+    );
+  }
+
+  resetFilterConfig(): void {
+    localStorage.removeItem(REMINDER_LOCAL_STORAGE_FILTER);
   }
 
   async update(reminder: Reminder): Promise<IResult<Reminder>> {
@@ -392,5 +414,13 @@ export class ReminderService {
 
     if (!check) return;
     return reminder;
+  }
+
+  private loadFilterConfig(): void {
+    const stored = JSON.parse(
+      localStorage.getItem(REMINDER_LOCAL_STORAGE_FILTER)
+    );
+
+    if (stored) this._filters = stored;
   }
 }

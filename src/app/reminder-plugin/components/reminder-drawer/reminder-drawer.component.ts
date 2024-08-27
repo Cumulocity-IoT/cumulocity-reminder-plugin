@@ -1,5 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
 import { AlertService, HeaderService } from '@c8y/ngx-components';
+import { has } from 'lodash';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import {
@@ -11,6 +12,7 @@ import {
   ReminderType,
   REMINDER_DRAWER_OPEN_CLASS,
   REMINDER_MAIN_HEADER_CLASS,
+  REMINDER_TYPE_FRAGMENT,
 } from '../../reminder.model';
 import { ReminderService } from '../../services/reminder.service';
 import { ReminderModalComponent } from '../reminder-modal/reminder-modal.component';
@@ -52,7 +54,9 @@ export class ReminderDrawerComponent implements OnDestroy {
     private reminderService: ReminderService,
     private alertService: AlertService,
     private modalService: BsModalService
-  ) {
+    ) {
+    this.initFilter();
+
     // check if the actual drawer was opened
     this.subscriptions.add(
       this.headerService.rightDrawerOpen$.subscribe((open) => {
@@ -71,9 +75,6 @@ export class ReminderDrawerComponent implements OnDestroy {
         this.digestReminders(reminders)
       )
     );
-
-    // get reminder types from service
-    this.types = this.reminderService.types;
   }
 
   ngOnDestroy(): void {
@@ -118,11 +119,12 @@ export class ReminderDrawerComponent implements OnDestroy {
     this.filterReminders();
   }
 
-  filterReminders() {
+  filterReminders(): void {
     this.reminderGroups = this.reminderService.groupReminders(
       this.reminders,
       this.buildFilter()
     );
+    this.reminderService.storeFilterConfig();
   }
 
   private toggleRightDrawer(open: boolean): void {
@@ -156,8 +158,23 @@ export class ReminderDrawerComponent implements OnDestroy {
     const filters: ReminderGroupFilter = {};
 
     // populate filters
-    if (this.typeFilter !== '') filters['reminderType'] = this.typeFilter;
+    if (this.typeFilter !== '')
+      filters[REMINDER_TYPE_FRAGMENT] = this.typeFilter;
 
     return Object.keys(filters).length > 0 ? filters : null;
+  }
+
+  private initFilter(): void {
+    this.types = this.reminderService.types;
+
+    if (!this.types.length) {
+      this.reminderService.resetFilterConfig();
+      return;
+    }
+
+    const filters = this.reminderService.filters;
+
+    if (has(filters, REMINDER_TYPE_FRAGMENT))
+      this.typeFilter = filters[REMINDER_TYPE_FRAGMENT];
   }
 }

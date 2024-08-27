@@ -14,6 +14,7 @@ import {
   ReminderType,
   REMINDER_TEXT_LENGTH,
   REMINDER_TYPE,
+  REMINDER_TYPE_FRAGMENT,
 } from '../../reminder.model';
 import { ReminderService } from '../../services';
 
@@ -182,7 +183,7 @@ export class ReminderModalComponent implements OnInit {
     if (!this.typeOptions.length) return;
 
     this.fields.push({
-      key: 'reminderType',
+      key: REMINDER_TYPE_FRAGMENT,
       type: 'select',
       props: {
         label: this.translateService.instant('Reminder type (optional)'),
