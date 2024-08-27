@@ -94,7 +94,7 @@ export class ReminderModalComponent implements OnInit {
     const reminder: IEvent = {
       source: this.reminder.source,
       type: REMINDER_TYPE,
-      time: moment(this.reminder.time).toISOString(),
+      time: moment(this.reminder.time).seconds(0).toISOString(),
       text: this.reminder.text,
       status: ReminderStatus.active,
     };
