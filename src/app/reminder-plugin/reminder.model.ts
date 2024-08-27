@@ -35,9 +35,14 @@ export interface ReminderGroup {
   status: ReminderGroupStatus;
   reminders: Reminder[];
   count: number;
+  total?: number;
 }
 
 export interface ReminderType {
   id: string;
   name: string;
+}
+
+export interface ReminderGroupFilter {
+  [key: string]: string;
 }

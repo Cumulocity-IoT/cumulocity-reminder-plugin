@@ -185,7 +185,7 @@ export class ReminderModalComponent implements OnInit {
       key: 'reminderType',
       type: 'select',
       props: {
-        label: this.translateService.instant('Reminder type'),
+        label: this.translateService.instant('Reminder type (optional)'),
         hidden: this.typeOptions?.length > 0,
         options: this.typeOptions,
       },

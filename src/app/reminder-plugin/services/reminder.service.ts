@@ -15,6 +15,7 @@ import { ReminderDrawerComponent } from '../components/reminder-drawer/reminder-
 import {
   Reminder,
   ReminderGroup,
+  ReminderGroupFilter,
   ReminderGroupStatus,
   ReminderStatus,
   ReminderType,
@@ -96,7 +97,10 @@ export class ReminderService {
     return type ? type.name : 'Unknown';
   }
 
-  groupReminders(reminders: Reminder[]): ReminderGroup[] {
+  groupReminders(
+    reminders: Reminder[],
+    filters?: ReminderGroupFilter
+  ): ReminderGroup[] {
     let dueDate: number;
     const now = new Date().getTime();
     const cleared: ReminderGroup = {
@@ -132,12 +136,11 @@ export class ReminderService {
     });
 
     // apply sort order
-
     due.reminders = sortBy(due.reminders, ['time']).reverse();
     upcoming.reminders = sortBy(upcoming.reminders, ['time']);
     cleared.reminders = sortBy(cleared.reminders, ['lastUpdated']).reverse();
 
-    return [due, upcoming, cleared];
+    return this.applyFilters([due, upcoming, cleared], filters);
   }
 
   clear(): void {
@@ -352,5 +355,42 @@ export class ReminderService {
       () => (this.reminders = this.digestReminders(this.reminders)),
       moment(closestReminder.time).diff(now)
     );
+  }
+
+  private applyFilters(
+    groups: ReminderGroup[],
+    filters?: ReminderGroupFilter
+  ): ReminderGroup[] {
+    if (!filters) return groups;
+
+    const keys = Object.keys(filters);
+    if (!keys.length) return groups;
+
+    groups.map((group) => {
+      group.reminders = group.reminders.filter((reminder) =>
+        this.applyReminderFilter(reminder, filters)
+      );
+      group.total = group.count;
+      group.count = group.reminders.length;
+      return group;
+    });
+
+    return groups;
+  }
+
+  private applyReminderFilter(
+    reminder: Reminder,
+    filters: ReminderGroupFilter
+  ): Reminder {
+    const keys = Object.keys(filters);
+    if (!keys.length) return reminder;
+
+    let check = true;
+    keys.forEach((key) => {
+      if (reminder[key] !== filters[key]) check = false;
+    });
+
+    if (!check) return;
+    return reminder;
   }
 }

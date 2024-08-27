@@ -5,6 +5,7 @@ import { BehaviorSubject, Subscription } from 'rxjs';
 import {
   Reminder,
   ReminderGroup,
+  ReminderGroupFilter,
   ReminderGroupStatus,
   ReminderStatus,
   ReminderType,
@@ -24,11 +25,13 @@ export class ReminderDrawerComponent implements OnDestroy {
   reminders: Reminder[] = [];
   reminderGroups: ReminderGroup[] = [];
   lastUpdate?: Date;
+  types: ReminderType[] = [];
 
   // for template
   reminderStatus = ReminderStatus;
   reminderGroupStatus = ReminderGroupStatus;
   groupIsExpanded: boolean[] = [true, true, false];
+  typeFilter = '';
 
   get open(): boolean {
     return this._open;
@@ -62,11 +65,15 @@ export class ReminderDrawerComponent implements OnDestroy {
       })
     );
 
+    // get live updates on reminders from service
     this.subscriptions.add(
       this.reminderService.reminders$.subscribe((reminders) =>
         this.digestReminders(reminders)
       )
     );
+
+    // get reminder types from service
+    this.types = this.reminderService.types;
   }
 
   ngOnDestroy(): void {
@@ -105,7 +112,17 @@ export class ReminderDrawerComponent implements OnDestroy {
   }
 
   setTypeFilter(type: ReminderType['id']): void {
-    console.log('setTypeFilter', type);
+    if (!this.types.length) return;
+
+    this.typeFilter = type;
+    this.filterReminders();
+  }
+
+  filterReminders() {
+    this.reminderGroups = this.reminderService.groupReminders(
+      this.reminders,
+      this.buildFilter()
+    );
   }
 
   private toggleRightDrawer(open: boolean): void {
@@ -127,10 +144,20 @@ export class ReminderDrawerComponent implements OnDestroy {
   }
 
   private digestReminders(reminders: Reminder[]): void {
-    // TODO allow filtering in UI?
-    // - filter by type, group / device?
     this.reminders = reminders;
-    this.reminderGroups = this.reminderService.groupReminders(reminders);
     this.lastUpdate = new Date();
+    this.reminderGroups = this.reminderService.groupReminders(
+      reminders,
+      this.buildFilter()
+    );
+  }
+
+  private buildFilter(): ReminderGroupFilter {
+    const filters: ReminderGroupFilter = {};
+
+    // populate filters
+    if (this.typeFilter !== '') filters['reminderType'] = this.typeFilter;
+
+    return Object.keys(filters).length > 0 ? filters : null;
   }
 }
