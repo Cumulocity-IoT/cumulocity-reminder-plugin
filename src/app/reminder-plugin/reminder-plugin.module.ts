@@ -20,6 +20,8 @@ import {
 } from './components';
 import { ReminderTypeComponent } from './components/reminder-type/reminder-type.component';
 import { DomService, ReminderService } from './services';
+import { ActiveTabService } from './services/active-tab.service';
+import { LocalStorageService } from './services/local-storage.service';
 
 @NgModule({
   declarations: [
@@ -46,6 +48,8 @@ import { DomService, ReminderService } from './services';
     CollapseModule,
   ],
   providers: [
+    LocalStorageService,
+    ActiveTabService,
     EventRealtimeService,
     ReminderService,
     DomService,
@@ -55,7 +59,11 @@ import { DomService, ReminderService } from './services';
   ],
 })
 export class ReminderPluginModule {
-  constructor(reminderService: ReminderService) {
-    reminderService.init(); // TODO better way to init?
+  constructor(
+    private activeTabService: ActiveTabService,
+    private reminderService: ReminderService
+  ) {
+    this.activeTabService.init();
+    this.reminderService.init();
   }
 }

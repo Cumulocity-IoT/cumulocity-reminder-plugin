@@ -26,6 +26,7 @@ import {
   REMINDER_TYPE,
 } from '../reminder.model';
 import { DomService } from './dom.service';
+import { LocalStorageService } from './local-storage.service';
 
 @Injectable()
 export class ReminderService {
@@ -72,6 +73,7 @@ export class ReminderService {
     private domService: DomService,
     private eventService: EventService,
     private eventRealtimeService: EventRealtimeService,
+    private localStorageService: LocalStorageService,
     private tenantOptionService: TenantOptionsService,
     private translateService: TranslateService
   ) {}
@@ -157,16 +159,13 @@ export class ReminderService {
   }
 
   storeFilterConfig(): void {
-    if (!this._filters) this.resetFilterConfig();
+    if (!this.filters) this.resetFilterConfig();
 
-    localStorage.setItem(
-      REMINDER_LOCAL_STORAGE_FILTER,
-      JSON.stringify(this._filters)
-    );
+    this.localStorageService.set(REMINDER_LOCAL_STORAGE_FILTER, this.filters);
   }
 
   resetFilterConfig(): void {
-    localStorage.removeItem(REMINDER_LOCAL_STORAGE_FILTER);
+    this.localStorageService.delete(REMINDER_LOCAL_STORAGE_FILTER);
   }
 
   async update(reminder: Reminder): Promise<IResult<Reminder>> {
@@ -417,8 +416,8 @@ export class ReminderService {
   }
 
   private loadFilterConfig(): void {
-    const stored = JSON.parse(
-      localStorage.getItem(REMINDER_LOCAL_STORAGE_FILTER)
+    const stored = this.localStorageService.get<ReminderGroupFilter>(
+      REMINDER_LOCAL_STORAGE_FILTER
     );
 
     if (stored) this._filters = stored;
