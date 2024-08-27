@@ -1,7 +1,13 @@
 import { ComponentRef, Injectable } from '@angular/core';
-import { EventService, IEvent, IResult } from '@c8y/client';
+import {
+  EventService,
+  IEvent,
+  IResult,
+  TenantOptionsService,
+} from '@c8y/client';
 import { EventRealtimeService, RealtimeMessage } from '@c8y/ngx-components';
-import { cloneDeep, filter as _filter, has, sortBy } from 'lodash';
+import { TranslateService } from '@ngx-translate/core';
+import { cloneDeep, filter as _filter, has, orderBy, sortBy } from 'lodash';
 import moment from 'moment';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -11,7 +17,10 @@ import {
   ReminderGroup,
   ReminderGroupStatus,
   ReminderStatus,
+  ReminderType,
   REMINDER_INITIAL_QUERY_SIZE,
+  REMINDER_TENENAT_OPTION_CATEGORY,
+  REMINDER_TENENAT_OPTION_TYPE_KEY,
   REMINDER_TYPE,
 } from '../reminder.model';
 import { DomService } from './dom.service';
@@ -22,12 +31,17 @@ export class ReminderService {
   reminderCounter$ = new BehaviorSubject<number>(0);
   open$?: BehaviorSubject<boolean>;
 
+  get types(): ReminderType[] {
+    return this._types;
+  }
+
   private subscription = new Subscription();
   private drawerRef?: ComponentRef<unknown>;
   private drawer?: ReminderDrawerComponent;
   private updateTimer?: NodeJS.Timeout;
   private _reminderCounter = 0;
   private _reminders: Reminder[] = [];
+  private _types: ReminderType[] = [];
 
   private get reminders(): Reminder[] {
     return this._reminders;
@@ -50,12 +64,15 @@ export class ReminderService {
   constructor(
     private domService: DomService,
     private eventService: EventService,
-    private eventRealtimeService: EventRealtimeService
+    private eventRealtimeService: EventRealtimeService,
+    private tenantOptionService: TenantOptionsService,
+    private translateService: TranslateService
   ) {}
 
   async init(): Promise<void> {
     if (this.drawer) return;
 
+    this._types = await this.fetchReminderTypes();
     void this.fetchActiveReminderCounter();
     this.createDrawer();
     this.reminders = await this.fetchReminders(REMINDER_INITIAL_QUERY_SIZE);
@@ -69,6 +86,14 @@ export class ReminderService {
 
   toggleDrawer() {
     this.drawer?.toggle();
+  }
+
+  getReminderTypeName(
+    reminderTypeID: ReminderType['id']
+  ): ReminderType['name'] {
+    const type = this.types.find((t) => t.id === reminderTypeID);
+
+    return type ? type.name : 'Unknown';
   }
 
   groupReminders(reminders: Reminder[]): ReminderGroup[] {
@@ -126,7 +151,7 @@ export class ReminderService {
     };
 
     // (un)set `isCleared` fragment to supoprt using retention rules for cleared reminders
-    event.isCleared = (reminder.status === ReminderStatus.cleared) ? {} : null;
+    event.isCleared = reminder.status === ReminderStatus.cleared ? {} : null;
 
     return (await this.eventService.update(event)) as IResult<Reminder>;
   }
@@ -270,6 +295,29 @@ export class ReminderService {
 
       return reminder;
     });
+  }
+
+  private async fetchReminderTypes(): Promise<ReminderType[]> {
+    let types: ReminderType[] = [];
+
+    try {
+      const response = await this.tenantOptionService.detail({
+        category: REMINDER_TENENAT_OPTION_CATEGORY,
+        key: REMINDER_TENENAT_OPTION_TYPE_KEY,
+      });
+
+      if (response.data)
+        types = (JSON.parse(response.data.value) as ReminderType[]).map(
+          (type) => ({
+            id: type.id,
+            name: this.translateService.instant(type.name),
+          })
+        );
+    } catch (error) {
+      console.log('No reminder type config found.', error);
+    }
+
+    return orderBy(types, 'name');
   }
 
   private updateCounter(): void {

@@ -136,6 +136,12 @@
     </p>
 
     <footer>
+      <!-- type -->
+      <button *ngIf="reminder.reminderType" type="button" class="btn btn-clean" (click)="setTypeFilter(reminder.reminderType)">
+        <i class="m-r-4" [c8yIcon]="'tag'"></i>
+        <c8y-reminder-type [id]="reminder.reminderType"></c8y-reminder-type>
+      </button>
+      <!-- asset reference -->
       <ng-container *ngIf="reminder.isGroup; else isDevice">
         <a [routerLink]="['/group', reminder.source.id]">
           <i [c8yIcon]="'c8y-group-open'"></i>

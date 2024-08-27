@@ -7,6 +7,7 @@ import {
   ReminderGroup,
   ReminderGroupStatus,
   ReminderStatus,
+  ReminderType,
   REMINDER_DRAWER_OPEN_CLASS,
   REMINDER_MAIN_HEADER_CLASS,
 } from '../../reminder.model';
@@ -101,6 +102,10 @@ export class ReminderDrawerComponent implements OnDestroy {
     } else {
       this.alertService.danger('Could not update reminder', res.statusText);
     }
+  }
+
+  setTypeFilter(type: ReminderType['id']): void {
+    console.log('setTypeFilter', type);
   }
 
   private toggleRightDrawer(open: boolean): void {

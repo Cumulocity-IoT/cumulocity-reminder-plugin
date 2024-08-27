@@ -11,17 +11,26 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 import {
   Reminder,
   ReminderStatus,
+  ReminderType,
   REMINDER_TEXT_LENGTH,
   REMINDER_TYPE,
 } from '../../reminder.model';
+import { ReminderService } from '../../services';
+
+interface FormlySelectOptions {
+  label: string;
+  value: string;
+  group?: string;
+}
 
 @Component({
   selector: 'c8y-reminder-modal',
   templateUrl: './reminder-modal.component.html',
 })
 export class ReminderModalComponent implements OnInit {
-  isLoading = false;
   asset!: Partial<IManagedObject>;
+  typeOptions!: FormlySelectOptions[];
+  isLoading = false;
   form = new FormGroup({});
 
   reminder: Partial<Reminder> = {
@@ -70,8 +79,11 @@ export class ReminderModalComponent implements OnInit {
     private eventService: EventService,
     private alertService: AlertService,
     private activatedRoute: ActivatedRoute,
-    private translateService: TranslateService
-  ) {}
+    private translateService: TranslateService,
+    private reminderService: ReminderService
+  ) {
+    this.setTypeField();
+  }
 
   ngOnInit(): void {
     const asset = this.getAssetFromRoute(this.activatedRoute.snapshot);
@@ -94,6 +106,7 @@ export class ReminderModalComponent implements OnInit {
     const reminder: IEvent = {
       source: this.reminder.source,
       type: REMINDER_TYPE,
+      reminderType: this.reminder.reminderType || null,
       time: moment(this.reminder.time).seconds(0).toISOString(),
       text: this.reminder.text,
       status: ReminderStatus.active,
@@ -158,5 +171,24 @@ export class ReminderModalComponent implements OnInit {
     }
 
     return undefined;
+  }
+
+  private setTypeField(): void {
+    this.typeOptions = this.reminderService.types.map((type: ReminderType) => ({
+      label: type.name,
+      value: type.id,
+    }));
+
+    if (!this.typeOptions.length) return;
+
+    this.fields.push({
+      key: 'reminderType',
+      type: 'select',
+      props: {
+        label: this.translateService.instant('Reminder type'),
+        hidden: this.typeOptions?.length > 0,
+        options: this.typeOptions,
+      },
+    });
   }
 }
