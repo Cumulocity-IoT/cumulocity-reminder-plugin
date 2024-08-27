@@ -18,6 +18,7 @@ import {
   ReminderModalComponent,
   TimeFieldType,
 } from './components';
+import { ReminderTypeComponent } from './components/reminder-type/reminder-type.component';
 import { DomService, ReminderService } from './services';
 
 @NgModule({
@@ -25,6 +26,7 @@ import { DomService, ReminderService } from './services';
     ReminderIndicatorComponent,
     ReminderDrawerComponent,
     ReminderModalComponent,
+    ReminderTypeComponent,
     AssetFieldType,
     TimeFieldType,
   ],

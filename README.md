@@ -14,6 +14,32 @@ _TBD_
 
 ---
 
+## Reminder Type Config
+
+| Key      | Value          | Info |
+| -------- | -------------- | ---- |
+| categroy | `c8y.reminder` |      |
+| key      | `types`        |      |
+
+```json
+[
+  {
+    "id": "1",
+    "name": "Type 1"
+  },
+  {
+    "id": "2",
+    "name": "My Preferred Type"
+  },
+  {
+    "id": "a_123",
+    "name": "A123"
+  }
+]
+```
+
+---
+
 ## Useful links
 
 ### 📘 Explore the Knowledge Base

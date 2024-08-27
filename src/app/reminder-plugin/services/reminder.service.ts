@@ -1,7 +1,13 @@
 import { ComponentRef, Injectable } from '@angular/core';
-import { EventService, IEvent, IResult } from '@c8y/client';
+import {
+  EventService,
+  IEvent,
+  IResult,
+  TenantOptionsService,
+} from '@c8y/client';
 import { EventRealtimeService, RealtimeMessage } from '@c8y/ngx-components';
-import { cloneDeep, filter as _filter, has, sortBy } from 'lodash';
+import { TranslateService } from '@ngx-translate/core';
+import { cloneDeep, filter as _filter, has, orderBy, sortBy } from 'lodash';
 import moment from 'moment';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -9,9 +15,14 @@ import { ReminderDrawerComponent } from '../components/reminder-drawer/reminder-
 import {
   Reminder,
   ReminderGroup,
+  ReminderGroupFilter,
   ReminderGroupStatus,
   ReminderStatus,
+  ReminderType,
   REMINDER_INITIAL_QUERY_SIZE,
+  REMINDER_LOCAL_STORAGE_FILTER,
+  REMINDER_TENENAT_OPTION_CATEGORY,
+  REMINDER_TENENAT_OPTION_TYPE_KEY,
   REMINDER_TYPE,
 } from '../reminder.model';
 import { DomService } from './dom.service';
@@ -22,12 +33,22 @@ export class ReminderService {
   reminderCounter$ = new BehaviorSubject<number>(0);
   open$?: BehaviorSubject<boolean>;
 
+  get types(): ReminderType[] {
+    return this._types;
+  }
+
+  get filters(): ReminderGroupFilter {
+    return this._filters;
+  }
+
   private subscription = new Subscription();
   private drawerRef?: ComponentRef<unknown>;
   private drawer?: ReminderDrawerComponent;
   private updateTimer?: NodeJS.Timeout;
   private _reminderCounter = 0;
   private _reminders: Reminder[] = [];
+  private _types: ReminderType[] = [];
+  private _filters: ReminderGroupFilter;
 
   private get reminders(): Reminder[] {
     return this._reminders;
@@ -50,12 +71,16 @@ export class ReminderService {
   constructor(
     private domService: DomService,
     private eventService: EventService,
-    private eventRealtimeService: EventRealtimeService
+    private eventRealtimeService: EventRealtimeService,
+    private tenantOptionService: TenantOptionsService,
+    private translateService: TranslateService
   ) {}
 
   async init(): Promise<void> {
     if (this.drawer) return;
 
+    this.loadFilterConfig();
+    this._types = await this.fetchReminderTypes();
     void this.fetchActiveReminderCounter();
     this.createDrawer();
     this.reminders = await this.fetchReminders(REMINDER_INITIAL_QUERY_SIZE);
@@ -71,7 +96,18 @@ export class ReminderService {
     this.drawer?.toggle();
   }
 
-  groupReminders(reminders: Reminder[]): ReminderGroup[] {
+  getReminderTypeName(
+    reminderTypeID: ReminderType['id']
+  ): ReminderType['name'] {
+    const type = this.types.find((t) => t.id === reminderTypeID);
+
+    return type ? type.name : 'Unknown';
+  }
+
+  groupReminders(
+    reminders: Reminder[],
+    filters = this._filters
+  ): ReminderGroup[] {
     let dueDate: number;
     const now = new Date().getTime();
     const cleared: ReminderGroup = {
@@ -107,16 +143,30 @@ export class ReminderService {
     });
 
     // apply sort order
-
     due.reminders = sortBy(due.reminders, ['time']).reverse();
     upcoming.reminders = sortBy(upcoming.reminders, ['time']);
     cleared.reminders = sortBy(cleared.reminders, ['lastUpdated']).reverse();
 
-    return [due, upcoming, cleared];
+    this._filters = filters;
+
+    return this.applyFilters([due, upcoming, cleared], filters);
   }
 
   clear(): void {
     this.reminders = [];
+  }
+
+  storeFilterConfig(): void {
+    if (!this._filters) this.resetFilterConfig();
+
+    localStorage.setItem(
+      REMINDER_LOCAL_STORAGE_FILTER,
+      JSON.stringify(this._filters)
+    );
+  }
+
+  resetFilterConfig(): void {
+    localStorage.removeItem(REMINDER_LOCAL_STORAGE_FILTER);
   }
 
   async update(reminder: Reminder): Promise<IResult<Reminder>> {
@@ -126,7 +176,7 @@ export class ReminderService {
     };
 
     // (un)set `isCleared` fragment to supoprt using retention rules for cleared reminders
-    event.isCleared = (reminder.status === ReminderStatus.cleared) ? {} : null;
+    event.isCleared = reminder.status === ReminderStatus.cleared ? {} : null;
 
     return (await this.eventService.update(event)) as IResult<Reminder>;
   }
@@ -272,6 +322,29 @@ export class ReminderService {
     });
   }
 
+  private async fetchReminderTypes(): Promise<ReminderType[]> {
+    let types: ReminderType[] = [];
+
+    try {
+      const response = await this.tenantOptionService.detail({
+        category: REMINDER_TENENAT_OPTION_CATEGORY,
+        key: REMINDER_TENENAT_OPTION_TYPE_KEY,
+      });
+
+      if (response.data)
+        types = (JSON.parse(response.data.value) as ReminderType[]).map(
+          (type) => ({
+            id: type.id,
+            name: this.translateService.instant(type.name),
+          })
+        );
+    } catch (error) {
+      console.log('No reminder type config found.', error);
+    }
+
+    return orderBy(types, 'name');
+  }
+
   private updateCounter(): void {
     const now = new Date().getTime();
     let count = 0;
@@ -304,5 +377,50 @@ export class ReminderService {
       () => (this.reminders = this.digestReminders(this.reminders)),
       moment(closestReminder.time).diff(now)
     );
+  }
+
+  private applyFilters(
+    groups: ReminderGroup[],
+    filters?: ReminderGroupFilter
+  ): ReminderGroup[] {
+    if (!filters) return groups;
+
+    const keys = Object.keys(filters);
+    if (!keys.length) return groups;
+
+    groups.map((group) => {
+      group.reminders = group.reminders.filter((reminder) =>
+        this.applyReminderFilter(reminder, filters)
+      );
+      group.total = group.count;
+      group.count = group.reminders.length;
+      return group;
+    });
+
+    return groups;
+  }
+
+  private applyReminderFilter(
+    reminder: Reminder,
+    filters: ReminderGroupFilter
+  ): Reminder {
+    const keys = Object.keys(filters);
+    if (!keys.length) return reminder;
+
+    let check = true;
+    keys.forEach((key) => {
+      if (reminder[key] !== filters[key]) check = false;
+    });
+
+    if (!check) return;
+    return reminder;
+  }
+
+  private loadFilterConfig(): void {
+    const stored = JSON.parse(
+      localStorage.getItem(REMINDER_LOCAL_STORAGE_FILTER)
+    );
+
+    if (stored) this._filters = stored;
   }
 }

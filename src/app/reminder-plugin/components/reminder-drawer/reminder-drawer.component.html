@@ -16,6 +16,24 @@
   </ul>
 
   <div class="body">
+    <!-- filter: reminder type -->
+    <div *ngIf="types.length">
+      <label for="reminder-type-filter" translate>Filter by Reminder Type</label>
+      <div class="c8y-select-wrapper">
+        <select
+          id="reminder-type-filter"
+          name="reminder-type"
+          class="form-control"
+          (change)="filterReminders()"
+          [(ngModel)]="typeFilter"
+        >
+          <option value="">{{ 'Not filtered' | translate }}</option>
+          <option *ngFor="let type of types" [ngValue]="type.id">{{ type.name }}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- list of reminders -->
     <ul class="reminder-group-list">
       <li *ngFor="let group of reminderGroups; let i = index" class="reminder-group-item">
         <header>
@@ -30,6 +48,13 @@
               [class.text-danger]="group.status === reminderGroupStatus.due && group.count > 0"
               >
               {{ group.count || 0 }}
+              <small
+                *ngIf="group.total"
+                title="{{ 'Number of reminders if not filtered' | translate }}"
+                class="text-muted"
+              >
+                / {{ group.total }}
+              </small>
             </span>
             <em>{{ group.status | translate }}</em>
             <i [c8yIcon]="'expand-arrow'" [class.expanded]="groupIsExpanded[i]"></i>
@@ -136,6 +161,12 @@
     </p>
 
     <footer>
+      <!-- type -->
+      <button *ngIf="types.length && reminder.reminderType" type="button" class="btn btn-clean" (click)="setTypeFilter(reminder.reminderType)">
+        <i class="m-r-4" [c8yIcon]="'tag'"></i>
+        <c8y-reminder-type [id]="reminder.reminderType"></c8y-reminder-type>
+      </button>
+      <!-- asset reference -->
       <ng-container *ngIf="reminder.isGroup; else isDevice">
         <a [routerLink]="['/group', reminder.source.id]">
           <i [c8yIcon]="'c8y-group-open'"></i>
