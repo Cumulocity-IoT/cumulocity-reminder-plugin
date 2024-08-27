@@ -48,7 +48,13 @@
               [class.text-danger]="group.status === reminderGroupStatus.due && group.count > 0"
               >
               {{ group.count || 0 }}
-              <small *ngIf="group.total" class="text-muted">/ {{ group.total }}</small>
+              <small
+                *ngIf="group.total"
+                title="{{ 'Number of reminders if not filtered' | translate }}"
+                class="text-muted"
+              >
+                / {{ group.total }}
+              </small>
             </span>
             <em>{{ group.status | translate }}</em>
             <i [c8yIcon]="'expand-arrow'" [class.expanded]="groupIsExpanded[i]"></i>
