@@ -1,7 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { ActivatedRoute, ActivatedRouteSnapshot } from '@angular/router';
-import { EventService, IEvent, IManagedObject, IResult } from '@c8y/client';
+import {
+  EventService,
+  IEvent,
+  IManagedObject,
+  InventoryService,
+  IResult,
+} from '@c8y/client';
 import { AlertService } from '@c8y/ngx-components';
 import { FormlyFieldConfig } from '@ngx-formly/core';
 import { TranslateService } from '@ngx-translate/core';
@@ -78,12 +84,13 @@ export class ReminderModalComponent implements OnInit {
   ];
 
   constructor(
+    private activatedRoute: ActivatedRoute,
+    private alertService: AlertService,
     private bsModalRef: BsModalRef,
     private eventService: EventService,
-    private alertService: AlertService,
-    private activatedRoute: ActivatedRoute,
-    private translateService: TranslateService,
-    private reminderService: ReminderService
+    private inventoryService: InventoryService,
+    private reminderService: ReminderService,
+    private translateService: TranslateService
   ) {
     this.setTypeField();
   }
@@ -115,7 +122,12 @@ export class ReminderModalComponent implements OnInit {
       status: ReminderStatus.active,
     };
 
-    if (has(this.asset, 'c8y_IsDeviceGroup')) reminder['isGroup'] = {};
+    // check if need to fetch source to determine if its a group or device, to be able to build the details url
+    const source =
+      this.reminder.source.id === this.asset?.id
+        ? this.asset
+        : (await this.inventoryService.detail(this.reminder.source.id)).data;
+    if (has(source, 'c8y_IsDeviceGroup')) reminder['isGroup'] = {};
 
     let request: IResult<IEvent> | undefined;
 

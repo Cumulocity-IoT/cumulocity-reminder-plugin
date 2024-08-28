@@ -5,7 +5,11 @@ import {
   IResult,
   TenantOptionsService,
 } from '@c8y/client';
-import { EventRealtimeService, RealtimeMessage } from '@c8y/ngx-components';
+import {
+  AlertService,
+  EventRealtimeService,
+  RealtimeMessage,
+} from '@c8y/ngx-components';
 import { TranslateService } from '@ngx-translate/core';
 import { cloneDeep, filter as _filter, has, orderBy, sortBy } from 'lodash';
 import moment from 'moment';
@@ -14,22 +18,26 @@ import { filter, map } from 'rxjs/operators';
 import { ReminderDrawerComponent } from '../components/reminder-drawer/reminder-drawer.component';
 import {
   Reminder,
+  ReminderConfig,
   ReminderGroup,
   ReminderGroupFilter,
   ReminderGroupStatus,
   ReminderStatus,
   ReminderType,
   REMINDER_INITIAL_QUERY_SIZE,
+  REMINDER_LOCAL_STORAGE_CONFIG,
   REMINDER_LOCAL_STORAGE_FILTER,
   REMINDER_TENENAT_OPTION_CATEGORY,
   REMINDER_TENENAT_OPTION_TYPE_KEY,
   REMINDER_TYPE,
 } from '../reminder.model';
+import { ActiveTabService } from './active-tab.service';
 import { DomService } from './dom.service';
 import { LocalStorageService } from './local-storage.service';
 
 @Injectable()
 export class ReminderService {
+  config$ = new BehaviorSubject<ReminderConfig>({});
   open$?: BehaviorSubject<boolean>;
   reminders$ = new BehaviorSubject<Reminder[]>([]);
   reminderCounter$ = new BehaviorSubject<number>(0);
@@ -42,7 +50,8 @@ export class ReminderService {
     return this._types;
   }
 
-  private subscription = new Subscription();
+  private hasNotificationPermission = false;
+  private subscriptions = new Subscription();
   private drawer?: ReminderDrawerComponent;
   private drawerRef?: ComponentRef<unknown>;
   private updateTimer?: NodeJS.Timeout;
@@ -51,6 +60,7 @@ export class ReminderService {
   private _reminderCounter = 0;
   private _reminders: Reminder[] = [];
   private _types: ReminderType[] = [];
+  private _config: ReminderConfig;
 
   private get reminderCounter(): number {
     return this._reminderCounter;
@@ -71,13 +81,17 @@ export class ReminderService {
   }
 
   constructor(
+    private activeTabService: ActiveTabService,
+    private alertService: AlertService,
     private domService: DomService,
     private eventService: EventService,
     private eventRealtimeService: EventRealtimeService,
     private localStorageService: LocalStorageService,
     private tenantOptionService: TenantOptionsService,
     private translateService: TranslateService
-  ) {}
+  ) {
+    this.activeTabService.init();
+  }
 
   clear(): void {
     this.reminders = [];
@@ -85,18 +99,21 @@ export class ReminderService {
 
   destroy() {
     if (this.drawerRef) this.domService.destroyComponent(this.drawerRef);
-    this.subscription.unsubscribe();
+    this.subscriptions.unsubscribe();
   }
 
   async init(): Promise<void> {
     if (this.drawer) return;
 
-    this.loadFilterConfig();
+    this.loadConfig();
+    this.loadFilterConfig(); // TODO join with config
+    this.requestNotificationPermission();
     this._types = await this.fetchReminderTypes();
     void this.fetchActiveReminderCounter();
     this.createDrawer();
     this.reminders = await this.fetchReminders(REMINDER_INITIAL_QUERY_SIZE);
     this.setupReminderSubscription();
+    this.setupConfigSubscription();
   }
 
   getReminderTypeName(
@@ -157,6 +174,11 @@ export class ReminderService {
 
   resetFilterConfig(): void {
     this.localStorageService.delete(REMINDER_LOCAL_STORAGE_FILTER);
+  }
+
+  setConfig(key: string, value: any): void {
+    this._config[key] = value;
+    this.localStorageService.set(REMINDER_LOCAL_STORAGE_CONFIG, this._config);
   }
 
   storeFilterConfig(): void {
@@ -265,10 +287,26 @@ export class ReminderService {
           })
         );
     } catch (error) {
-      console.log('No reminder type config found.', error);
+      console.log('[R.S:1] No reminder type config found.', error);
     }
 
     return orderBy(types, 'name');
+  }
+
+  private getAssetUrlFromReminder(
+    reminder: Reminder,
+    absoluteUrl = false
+  ): string {
+    let url = '';
+
+    if (absoluteUrl) {
+      url = `${location.origin}${location.pathname}${location.search}#`;
+    }
+
+    const assetType = reminder.isGroup ? 'group' : 'device';
+    url += `/${assetType}/${reminder.source.id}`;
+
+    return url;
   }
 
   private handleReminderUpdate(
@@ -361,6 +399,70 @@ export class ReminderService {
     if (stored) this._filters = stored;
   }
 
+  private loadConfig(): void {
+    this._config = this.localStorageService.getOrDefault<ReminderConfig>(
+      REMINDER_LOCAL_STORAGE_CONFIG,
+      { toast: false, browser: false }
+    );
+    this.config$.next(this._config);
+  }
+
+  private async requestNotificationPermission(): Promise<boolean> {
+    if (!('Notification' in window)) {
+      console.log('This browser does not support notifications.');
+      return false;
+    }
+
+    const response = await Notification.requestPermission();
+
+    return (this.hasNotificationPermission = response === 'granted');
+  }
+
+  private sendNotification(reminder: Reminder): void {
+    if (!this.activeTabService.isActive()) return;
+    if (this._config.browser) this.sendBrowserNotification(reminder);
+    if (this._config.toast) this.sendToast(reminder);
+  }
+
+  private sendBrowserNotification(reminder: Reminder): void {
+    if (!this.hasNotificationPermission) {
+      console.error(
+        '[R.S:2] Could not send browser notification, missing permission.'
+      );
+      return;
+    }
+
+    const notification: Notification = new Notification(
+      `${reminder.source.name}`,
+      {
+        body: `[DUE] ${reminder.text}`,
+        data: reminder,
+        tag: 'reminder.due',
+      }
+    );
+
+    notification.addEventListener('click', (event) => {
+      const reminder = event.currentTarget['data'] as Reminder;
+
+      window.open(this.getAssetUrlFromReminder(reminder, true), '_blank');
+      notification.close();
+    });
+  }
+
+  private sendToast(reminder: Reminder): void {
+    const url = this.getAssetUrlFromReminder(reminder);
+    const icon = `<i [c8yIcon]="${
+      reminder.isGroup ? 'c8y-group-open' : 'c8y-device'
+    }"></i>`;
+
+    this.alertService.add({
+      type: 'warning',
+      text: `<a href="#${url}" class="full-click">${icon} ${reminder.source.name}</a><br />
+        <small>[DUE] ${reminder.text}</small>`,
+      allowHtml: true,
+    });
+  }
+
   private setUpdateTimer(): void {
     const now = moment();
 
@@ -376,14 +478,29 @@ export class ReminderService {
 
     if (!closestReminder) return;
 
-    this.updateTimer = setTimeout(
-      () => (this.reminders = this.digestReminders(this.reminders)),
-      moment(closestReminder.time).diff(now)
-    );
+    this.updateTimer = setTimeout(() => {
+      this.reminders = this.digestReminders(this.reminders);
+      this.sendNotification(closestReminder);
+    }, moment(closestReminder.time).diff(now));
+  }
+
+  private setupConfigSubscription(): void {
+    this.localStorageService.storage$
+      .pipe(
+        map((config) => {
+          if (has(config, REMINDER_LOCAL_STORAGE_CONFIG))
+            return JSON.parse(
+              config[REMINDER_LOCAL_STORAGE_CONFIG]
+            ) as ReminderConfig;
+        })
+      )
+      .subscribe((config) => {
+        this.config$.next(config);
+      });
   }
 
   private setupReminderSubscription(): void {
-    this.subscription.add(
+    this.subscriptions.add(
       this.eventRealtimeService
         .onAll$()
         .pipe(

@@ -5,6 +5,7 @@ import { BsModalService } from 'ngx-bootstrap/modal';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import {
   Reminder,
+  ReminderConfig,
   ReminderGroup,
   ReminderGroupFilter,
   ReminderGroupStatus,
@@ -24,6 +25,7 @@ import { ReminderModalComponent } from '../reminder-modal/reminder-modal.compone
 })
 export class ReminderDrawerComponent implements OnDestroy {
   open$ = new BehaviorSubject<boolean>(this.open);
+  config: ReminderConfig;
   reminders: Reminder[] = [];
   reminderGroups: ReminderGroup[] = [];
   lastUpdate?: Date;
@@ -45,18 +47,93 @@ export class ReminderDrawerComponent implements OnDestroy {
   }
 
   private subscriptions = new Subscription();
-  private updateTimer?: NodeJS.Timeout;
   private rightDrawerOpen = false;
+  private updateTimer?: NodeJS.Timeout;
   private _open = false;
 
   constructor(
-    private headerService: HeaderService,
-    private reminderService: ReminderService,
     private alertService: AlertService,
-    private modalService: BsModalService
-    ) {
+    private headerService: HeaderService,
+    private modalService: BsModalService,
+    private reminderService: ReminderService
+  ) {
     this.initFilter();
+    this.initSubscriptions();
+  }
 
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+    clearTimeout(this.updateTimer);
+  }
+
+  createReminder(): void {
+    this.modalService.show(ReminderModalComponent, {
+      class: 'modal-sm',
+    });
+  }
+
+  filterReminders(): void {
+    this.reminderGroups = this.reminderService.groupReminders(
+      this.reminders,
+      this.buildFilter()
+    );
+    this.reminderService.storeFilterConfig();
+  }
+
+  setConfig(configOption: string, status: boolean) {
+    this.reminderService.setConfig(configOption, status);
+  }
+
+  setTypeFilter(type: ReminderType['id']): void {
+    if (!this.types.length) return;
+
+    this.typeFilter = type;
+    this.filterReminders();
+  }
+
+  toggle(open?: boolean): boolean {
+    open = typeof open === 'boolean' ? open : !this.open;
+
+    this.open = open;
+    this.toggleRightDrawer(open);
+
+    return this.open;
+  }
+
+  private buildFilter(): ReminderGroupFilter {
+    const filters: ReminderGroupFilter = {};
+
+    // populate filters
+    if (this.typeFilter !== '')
+      filters[REMINDER_TYPE_FRAGMENT] = this.typeFilter;
+
+    return Object.keys(filters).length > 0 ? filters : null;
+  }
+
+  private digestReminders(reminders: Reminder[]): void {
+    this.reminders = reminders;
+    this.lastUpdate = new Date();
+    this.reminderGroups = this.reminderService.groupReminders(
+      reminders,
+      this.buildFilter()
+    );
+  }
+
+  private initFilter(): void {
+    this.types = this.reminderService.types;
+
+    if (!this.types.length) {
+      this.reminderService.resetFilterConfig();
+      return;
+    }
+
+    const filters = this.reminderService.filters;
+
+    if (has(filters, REMINDER_TYPE_FRAGMENT))
+      this.typeFilter = filters[REMINDER_TYPE_FRAGMENT];
+  }
+
+  private initSubscriptions(): void {
     // check if the actual drawer was opened
     this.subscriptions.add(
       this.headerService.rightDrawerOpen$.subscribe((open) => {
@@ -75,56 +152,13 @@ export class ReminderDrawerComponent implements OnDestroy {
         this.digestReminders(reminders)
       )
     );
-  }
 
-  ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
-    clearTimeout(this.updateTimer);
-  }
-
-  toggle(open?: boolean): boolean {
-    open = typeof open === 'boolean' ? open : !this.open;
-
-    this.open = open;
-    this.toggleRightDrawer(open);
-
-    return this.open;
-  }
-
-  createReminder(): void {
-    this.modalService.show(ReminderModalComponent, {
-      class: 'modal-sm',
-    });
-  }
-
-  async updateReminder(
-    reminder: Reminder,
-    status: Reminder['status']
-  ): Promise<void> {
-    reminder.status = status;
-
-    const { res } = await this.reminderService.update(reminder);
-
-    if (res.status === 200) {
-      this.alertService.success(`Reminder ${String(status).toLowerCase()}`);
-    } else {
-      this.alertService.danger('Could not update reminder', res.statusText);
-    }
-  }
-
-  setTypeFilter(type: ReminderType['id']): void {
-    if (!this.types.length) return;
-
-    this.typeFilter = type;
-    this.filterReminders();
-  }
-
-  filterReminders(): void {
-    this.reminderGroups = this.reminderService.groupReminders(
-      this.reminders,
-      this.buildFilter()
+    // get config updates
+    this.subscriptions.add(
+      this.reminderService.config$.subscribe((config) => {
+        this.config = config;
+      })
     );
-    this.reminderService.storeFilterConfig();
   }
 
   private toggleRightDrawer(open: boolean): void {
@@ -145,36 +179,18 @@ export class ReminderDrawerComponent implements OnDestroy {
     }
   }
 
-  private digestReminders(reminders: Reminder[]): void {
-    this.reminders = reminders;
-    this.lastUpdate = new Date();
-    this.reminderGroups = this.reminderService.groupReminders(
-      reminders,
-      this.buildFilter()
-    );
-  }
+  async updateReminder(
+    reminder: Reminder,
+    status: Reminder['status']
+  ): Promise<void> {
+    reminder.status = status;
 
-  private buildFilter(): ReminderGroupFilter {
-    const filters: ReminderGroupFilter = {};
+    const { res } = await this.reminderService.update(reminder);
 
-    // populate filters
-    if (this.typeFilter !== '')
-      filters[REMINDER_TYPE_FRAGMENT] = this.typeFilter;
-
-    return Object.keys(filters).length > 0 ? filters : null;
-  }
-
-  private initFilter(): void {
-    this.types = this.reminderService.types;
-
-    if (!this.types.length) {
-      this.reminderService.resetFilterConfig();
-      return;
+    if (res.status === 200) {
+      this.alertService.success(`Reminder ${String(status).toLowerCase()}`);
+    } else {
+      this.alertService.danger('Could not update reminder', res.statusText);
     }
-
-    const filters = this.reminderService.filters;
-
-    if (has(filters, REMINDER_TYPE_FRAGMENT))
-      this.typeFilter = filters[REMINDER_TYPE_FRAGMENT];
   }
 }

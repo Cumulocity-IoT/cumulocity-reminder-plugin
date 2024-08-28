@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import {
+  AlertModule,
   CoreModule,
   EventRealtimeService,
   hookAction,
@@ -33,37 +34,34 @@ import { LocalStorageService } from './services/local-storage.service';
     TimeFieldType,
   ],
   imports: [
+    AssetSelectorModule,
+    AlertModule,
+    CollapseModule,
     CommonModule,
     CoreModule,
-    RouterModule,
-    AssetSelectorModule,
-    MomentModule,
     FormlyModule.forChild({
       types: [
         { name: 'time', component: TimeFieldType },
         { name: 'asset', component: AssetFieldType },
       ],
     }),
+    MomentModule,
+    RouterModule,
     TooltipModule,
-    CollapseModule,
   ],
   providers: [
-    LocalStorageService,
     ActiveTabService,
-    EventRealtimeService,
-    ReminderService,
     DomService,
+    EventRealtimeService,
+    LocalStorageService,
+    ReminderService,
     hookAction({
       component: ReminderIndicatorComponent,
     }),
   ],
 })
 export class ReminderPluginModule {
-  constructor(
-    private activeTabService: ActiveTabService,
-    private reminderService: ReminderService
-  ) {
-    this.activeTabService.init();
+  constructor(private reminderService: ReminderService) {
     this.reminderService.init();
   }
 }

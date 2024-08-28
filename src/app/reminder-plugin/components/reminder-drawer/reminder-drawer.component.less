@@ -17,15 +17,20 @@ aside {
   display: flex;
   flex-direction: column;
   width: 240px;
-  padding: 24px 0;
+  padding: 24px 0 0;
   background-color: #fff;
   transform: translateX(100%);
   transition: all .4s ease-in-out;
 
-  > header,
-  > footer {
+  > header {
     flex: 0 0 auto;
     padding: 0 16px;
+  }
+
+  > footer {
+    flex: 0 0 auto;
+    padding: 16px 16px 24px;
+    background: var(--c8y-global-odd);
   }
 
   > .drawer-actions {
@@ -36,9 +41,10 @@ aside {
   > .body {
     flex: 1 1 auto;
     overflow: auto;
-    margin: 16px 0;
+    margin: 16px 0 0;
     display: flex;
     flex-direction: column;
+    box-shadow: inset 0 -1px 0 var(--c8y-component-border-color, var(--c8y-root-component-border-color));
 
     > div,
     > small {
