@@ -386,7 +386,7 @@ export class ReminderService {
   private loadConfig(): void {
     this._config = this.localStorageService.getOrDefault<ReminderConfig>(
       REMINDER_LOCAL_STORAGE_CONFIG,
-      { toast: false, browser: false }
+      { toast: false, browser: false, filter: null }
     );
     this.config$.next(this._config);
   }
