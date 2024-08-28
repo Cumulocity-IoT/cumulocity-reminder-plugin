@@ -66,9 +66,11 @@ export class ReminderModalComponent implements OnInit {
         {
           key: 'time',
           type: 'time',
+          defaultValue: moment().add(1, 'minute').toISOString(),
           props: {
             label: this.translateService.instant('Remind me on'),
             required: true,
+            minDate: moment(),
           },
         },
       ],
