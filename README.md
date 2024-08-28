@@ -1,25 +1,38 @@
-# cumulocity-reminder-plugin
-
----
+# Cumulocity IoT UI Critical Alarm Reminder Plugin
 
 [![Node.js CI](https://github.com/SoftwareAG/cumulocity-reminder-plugin/actions/workflows/test.yml/badge.svg)](https://github.com/SoftwareAG/cumulocity-reminder-plugin/actions/workflows/test.yml)
 
-_TBD_
-
-|   C8Y |  Plugin |
-| ----: | ------: |
-| ^1020 |      v1 |
-|  1018 |      v0 |
-|  1017 |      v0 |
-
 ---
 
-## Reminder Type Config
+## Features
 
-| Key      | Value          | Info |
-| -------- | -------------- | ---- |
-| categroy | `c8y.reminder` |      |
-| key      | `types`        |      |
+### Reminders
+
+_TBD_
+
+### Notifications
+
+_TBD_
+
+### Reminder Type Config
+
+Selectable reminder types can be configured using the tenant option – best using the [Tenant Option Manager Plugin](https://github.com/SoftwareAG/cumulocity-tenant-option-management-plugin) –, using the configuration as described below. Per default, no config is set and the type selection hidden.
+
+![](./_media/type-filter.png)  
+<small>Reminder type filter – available to the user, accessible from within the reminder drawer –, and display of types on reminder items.</small>
+
+![](./media/../_media/type-create-reminder.png)  
+<small>The reminder type field is shown, within the reminder creation dialog, when types are configured.</small>
+
+| Fragment |  Type  | Info                                                                                                                                 |
+| -------- | :----: | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`     | string | Any unique string value, used to reference the filter, when saved in local storage. Not displayed to the user. As short as possible. |
+| `name`   | string | Human-readable label for the reminder type, displayed to the user.                                                                   |
+
+![Screenshot of an example tenant option config, within the manager plugin UI](./_media/type-tenant-options.png)  
+<small>Tenant option config: Category `c8y.reminder`, Key `types`.</small>
+
+##### Example Config
 
 ```json
 [
@@ -37,6 +50,53 @@ _TBD_
   }
 ]
 ```
+
+### User Configuraion
+
+_TBD_
+
+---
+
+<!--
+## Installation and update
+
+_TBD_
+
+---
+
+-->
+
+## Local Development
+
+### Recommended version
+
+|   C8Y |  Plugin | Versions                             |
+| ----: | ------: | ------------------------------------ |
+| ^1020 |      v1 | node v18.x, npm v10.x, Angular v17.x |
+|  1018 |      v0 |                                      |
+|  1017 |      v0 | node v16.x, npm v9.x, Angular v14.x  |
+
+### How to start
+
+Change the target tenant and application you want to run this plugin on in the `package.json`.
+
+```bash
+ng serve -u https://{{your-tenant}}.cumulocity.com/ --shell {{cockpit}}
+```
+
+Keep in mind that this plugin needs to have an app (e.g. cockpit) running with at least the same version as this plugin. if your tenant contains an older version, use the c8ycli to create a cockpit clone running with **at least version 1016.0.59**! Upload this clone to the target tenant (e.g. cockpit-1016) and reference this name in the `--shell` command.
+
+The widget plugin can be locally tested via the start script:
+
+```bash
+npm start
+```
+
+In the Module Federation terminology, `widget` plugin is called `remote` and the `cockpit` is called `shell`. Modules provided by this `widget` will be loaded by the `cockpit` application at the runtime. This plugin provides a basic custom widget that can be accessed through the `Add widget` menu.
+
+> Note that the `--shell` flag creates a proxy to the cockpit application and provides `ReminderPluginModule` as an `remote` via URL options.
+
+Also deploying needs no special handling and can be simply done via `npm run deploy`. As soon as the application has exports it will be uploaded as a plugin.
 
 ---
 
