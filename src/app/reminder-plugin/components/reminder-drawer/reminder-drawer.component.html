@@ -81,13 +81,33 @@
     </small>
   </div>
 
-  <!-- TODO provide option to configure links here
   <footer>
-    <ul class="drawer-actions">
-      <li></li>
-    </ul>
+    <div>
+      <label class="c8y-switch">
+        <input
+          type="checkbox"
+          name="toast-notifications-enabled"
+          [ngModel]="config.toast"
+          (change)="setConfig('toast', $event.currentTarget.checked)"
+        />
+        <span></span>
+        {{ 'Toast Notifications' | translate }}
+      </label>
+    </div>
+
+    <div>
+      <label class="c8y-switch">
+        <input
+          type="checkbox"
+          name="browser-notifications-enabled"
+          [ngModel]="config.browser"
+          (change)="setConfig('browser', $event.currentTarget.checked)"
+        />
+        <span></span>
+        {{ 'Browser Notifications' | translate }}
+      </label>
+    </div>
   </footer>
-  -->
 </aside>
 
 <!-- single reminder item template -->

@@ -10,20 +10,7 @@ export const REMINDER_TEXT_LENGTH = 100;
 export const REMINDER_TENENAT_OPTION_CATEGORY: ITenantOption['category'] = 'c8y.reminder';
 export const REMINDER_TENENAT_OPTION_TYPE_KEY: ITenantOption['key'] = 'types';
 export const REMINDER_LOCAL_STORAGE_FILTER = 'c8y_rpFilter';
-
-export const ReminderGroupStatus = {
-  due: 'DUE',
-  upcoming: 'UPCOMING',
-  cleared: 'CLEARED',
-};
-export type ReminderGroupStatus = (typeof ReminderGroupStatus)[keyof typeof ReminderGroupStatus];
-
-export const ReminderStatus = {
-  active: 'ACTIVE',
-  acknowledged: 'ACKNOWLEDGED',
-  cleared: 'CLEARED',
-};
-export type ReminderStatus = (typeof ReminderStatus)[keyof typeof ReminderStatus];
+export const REMINDER_LOCAL_STORAGE_CONFIG = 'c8y_rpConfig';
 
 export interface Reminder extends IEvent {
   status: ReminderStatus;
@@ -33,6 +20,12 @@ export interface Reminder extends IEvent {
   reminderType?: ReminderType['id'];
 }
 
+export interface ReminderConfig {
+  browser?: boolean;
+  filter?: ReminderGroupFilter;
+  toast?: boolean;
+}
+
 export interface ReminderGroup {
   status: ReminderGroupStatus;
   reminders: Reminder[];
@@ -40,11 +33,27 @@ export interface ReminderGroup {
   total?: number;
 }
 
+export interface ReminderGroupFilter {
+  [key: string]: string;
+}
+
+export const ReminderGroupStatus = {
+  due: 'DUE',
+  upcoming: 'UPCOMING',
+  cleared: 'CLEARED',
+};
+export type ReminderGroupStatus =
+  (typeof ReminderGroupStatus)[keyof typeof ReminderGroupStatus];
+
+export const ReminderStatus = {
+  active: 'ACTIVE',
+  acknowledged: 'ACKNOWLEDGED',
+  cleared: 'CLEARED',
+};
+export type ReminderStatus =
+  (typeof ReminderStatus)[keyof typeof ReminderStatus];
+
 export interface ReminderType {
   id: string;
   name: string;
-}
-
-export interface ReminderGroupFilter {
-  [key: string]: string;
 }

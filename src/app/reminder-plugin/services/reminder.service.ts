@@ -3,52 +3,67 @@ import {
   EventService,
   IEvent,
   IResult,
-  TenantOptionsService,
+  TenantOptionsService
 } from '@c8y/client';
-import { EventRealtimeService, RealtimeMessage } from '@c8y/ngx-components';
+import {
+  AlertService,
+  EventRealtimeService,
+  RealtimeMessage
+} from '@c8y/ngx-components';
 import { TranslateService } from '@ngx-translate/core';
-import { cloneDeep, filter as _filter, has, orderBy, sortBy } from 'lodash';
+import { cloneDeep, filter as _filter, has, isEqual, orderBy, sortBy } from 'lodash';
 import moment from 'moment';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { ReminderDrawerComponent } from '../components/reminder-drawer/reminder-drawer.component';
 import {
   Reminder,
+  ReminderConfig,
   ReminderGroup,
   ReminderGroupFilter,
   ReminderGroupStatus,
   ReminderStatus,
   ReminderType,
   REMINDER_INITIAL_QUERY_SIZE,
-  REMINDER_LOCAL_STORAGE_FILTER,
+  REMINDER_LOCAL_STORAGE_CONFIG,
   REMINDER_TENENAT_OPTION_CATEGORY,
   REMINDER_TENENAT_OPTION_TYPE_KEY,
-  REMINDER_TYPE,
+  REMINDER_TYPE
 } from '../reminder.model';
+import { ActiveTabService } from './active-tab.service';
 import { DomService } from './dom.service';
+import { LocalStorageService } from './local-storage.service';
 
 @Injectable()
 export class ReminderService {
+  config$ = new BehaviorSubject<ReminderConfig>({});
+  filters$ = new BehaviorSubject<ReminderGroupFilter>({});
+  open$?: BehaviorSubject<boolean>;
   reminders$ = new BehaviorSubject<Reminder[]>([]);
   reminderCounter$ = new BehaviorSubject<number>(0);
-  open$?: BehaviorSubject<boolean>;
 
   get types(): ReminderType[] {
     return this._types;
   }
 
-  get filters(): ReminderGroupFilter {
-    return this._filters;
-  }
-
-  private subscription = new Subscription();
-  private drawerRef?: ComponentRef<unknown>;
+  private hasNotificationPermission = false;
+  private subscriptions = new Subscription();
   private drawer?: ReminderDrawerComponent;
+  private drawerRef?: ComponentRef<unknown>;
   private updateTimer?: NodeJS.Timeout;
+
   private _reminderCounter = 0;
   private _reminders: Reminder[] = [];
   private _types: ReminderType[] = [];
-  private _filters: ReminderGroupFilter;
+  private _config: ReminderConfig;
+
+  private get reminderCounter(): number {
+    return this._reminderCounter;
+  }
+  private set reminderCounter(count: number) {
+    this._reminderCounter = count;
+    this.reminderCounter$.next(this._reminderCounter);
+  }
 
   private get reminders(): Reminder[] {
     return this._reminders;
@@ -60,40 +75,39 @@ export class ReminderService {
     this.setUpdateTimer();
   }
 
-  private get reminderCounter(): number {
-    return this._reminderCounter;
-  }
-  private set reminderCounter(count: number) {
-    this._reminderCounter = count;
-    this.reminderCounter$.next(this._reminderCounter);
-  }
-
   constructor(
+    private activeTabService: ActiveTabService,
+    private alertService: AlertService,
     private domService: DomService,
     private eventService: EventService,
     private eventRealtimeService: EventRealtimeService,
+    private localStorageService: LocalStorageService,
     private tenantOptionService: TenantOptionsService,
     private translateService: TranslateService
-  ) {}
+  ) {
+    this.activeTabService.init();
+  }
+
+  clear(): void {
+    this.reminders = [];
+  }
+
+  destroy() {
+    if (this.drawerRef) this.domService.destroyComponent(this.drawerRef);
+    this.subscriptions.unsubscribe();
+  }
 
   async init(): Promise<void> {
     if (this.drawer) return;
 
-    this.loadFilterConfig();
+    this.loadConfig();
+    this.requestNotificationPermission();
     this._types = await this.fetchReminderTypes();
     void this.fetchActiveReminderCounter();
     this.createDrawer();
     this.reminders = await this.fetchReminders(REMINDER_INITIAL_QUERY_SIZE);
     this.setupReminderSubscription();
-  }
-
-  destroy() {
-    if (this.drawerRef) this.domService.destroyComponent(this.drawerRef);
-    this.subscription.unsubscribe();
-  }
-
-  toggleDrawer() {
-    this.drawer?.toggle();
+    this.setupConfigSubscription();
   }
 
   getReminderTypeName(
@@ -106,7 +120,7 @@ export class ReminderService {
 
   groupReminders(
     reminders: Reminder[],
-    filters = this._filters
+    filter?: ReminderGroupFilter
   ): ReminderGroup[] {
     let dueDate: number;
     const now = new Date().getTime();
@@ -147,38 +161,63 @@ export class ReminderService {
     upcoming.reminders = sortBy(upcoming.reminders, ['time']);
     cleared.reminders = sortBy(cleared.reminders, ['lastUpdated']).reverse();
 
-    this._filters = filters;
+    if (filter) this.setConfig('filter', filter);
 
-    return this.applyFilters([due, upcoming, cleared], filters);
-  }
-
-  clear(): void {
-    this.reminders = [];
-  }
-
-  storeFilterConfig(): void {
-    if (!this._filters) this.resetFilterConfig();
-
-    localStorage.setItem(
-      REMINDER_LOCAL_STORAGE_FILTER,
-      JSON.stringify(this._filters)
-    );
+    return this.applyFilter([due, upcoming, cleared], filter);
   }
 
   resetFilterConfig(): void {
-    localStorage.removeItem(REMINDER_LOCAL_STORAGE_FILTER);
+    delete this._config.filter;
+    this.config$.next(this._config);
   }
 
-  async update(reminder: Reminder): Promise<IResult<Reminder>> {
-    const event: Partial<IEvent> = {
-      id: reminder.id,
-      status: reminder.status,
-    };
+  setConfig(key: string, value: any): void {
+    if (isEqual(this._config[key], value)) return;
 
-    // (un)set `isCleared` fragment to supoprt using retention rules for cleared reminders
-    event.isCleared = reminder.status === ReminderStatus.cleared ? {} : null;
+    this._config[key] = value;
+    this.localStorageService.set(REMINDER_LOCAL_STORAGE_CONFIG, this._config);
+    this.config$.next(this._config);
+  }
 
-    return (await this.eventService.update(event)) as IResult<Reminder>;
+  toggleDrawer() {
+    this.drawer?.toggle();
+  }
+
+  private applyFilter(
+    groups: ReminderGroup[],
+    filters?: ReminderGroupFilter
+  ): ReminderGroup[] {
+    if (!filters) return groups;
+
+    const keys = Object.keys(filters);
+    if (!keys.length) return groups;
+
+    groups.map((group) => {
+      group.reminders = group.reminders.filter((reminder) =>
+        this.applyReminderFilter(reminder, filters)
+      );
+      group.total = group.count;
+      group.count = group.reminders.length;
+      return group;
+    });
+
+    return groups;
+  }
+
+  private applyReminderFilter(
+    reminder: Reminder,
+    filters: ReminderGroupFilter
+  ): Reminder {
+    const keys = Object.keys(filters);
+    if (!keys.length) return reminder;
+
+    let check = true;
+    keys.forEach((key) => {
+      if (reminder[key] !== filters[key]) check = false;
+    });
+
+    if (!check) return;
+    return reminder;
   }
 
   private createDrawer() {
@@ -187,105 +226,6 @@ export class ReminderService {
     );
     this.drawer = this.drawerRef.instance as ReminderDrawerComponent;
     this.open$ = this.drawer.open$;
-  }
-
-  // all reminders whos `time` is in the past and are still active
-  private async fetchActiveReminderCounter(): Promise<number> {
-    let counter = 0;
-
-    try {
-      const response = await this.eventService.list({
-        type: REMINDER_TYPE,
-        pageSize: 1,
-        fragmentType: 'status',
-        fragmentValue: ReminderStatus.active,
-        withTotalPages: true,
-        dateFrom: '1970-01-01',
-        dateTo: moment().toISOString(),
-      });
-
-      counter = response?.paging?.totalPages || 0;
-    } catch (error) {
-      console.error(error); // TODO better error handling
-    }
-
-    this.reminderCounter = counter;
-
-    return counter;
-  }
-
-  private async fetchReminders(
-    pageSize: number,
-    currentPage = 1
-  ): Promise<Reminder[]> {
-    let reminders: Reminder[] = [];
-
-    try {
-      const response = await this.eventService.list({
-        type: REMINDER_TYPE,
-        withTotalPages: currentPage === 1,
-        pageSize,
-        currentPage,
-      });
-
-      reminders = response.data as Reminder[];
-    } catch (error) {
-      console.error(error); // TODO better error handling
-    }
-
-    return this.digestReminders(reminders);
-  }
-
-  private setupReminderSubscription(): void {
-    this.subscription.add(
-      this.eventRealtimeService
-        .onAll$()
-        .pipe(
-          filter(
-            (message) =>
-              message.realtimeAction === 'DELETE' ||
-              (has(message.data, 'type') &&
-                message.data['type'] === REMINDER_TYPE)
-          ),
-          map((message) => message as RealtimeMessage<Reminder>)
-        )
-        .subscribe((message) => this.handleReminderUpdate(message))
-    );
-  }
-
-  private handleReminderUpdate(
-    message: Partial<RealtimeMessage<Reminder>>
-  ): Reminder | undefined {
-    let reminders = cloneDeep(this.reminders);
-    let now = moment();
-
-    if (message.realtimeAction === 'DELETE')
-      return this.deleteRminderFromList(message, reminders);
-
-    const reminder = this.digestReminders([message.data as Reminder])[0];
-
-    switch (message.realtimeAction) {
-      case 'UPDATE':
-        reminders = this._reminders.map((r) => {
-          if (r.id === reminder.id) r = reminder;
-          return r;
-        });
-        void this.fetchActiveReminderCounter();
-        break;
-      case 'CREATE':
-        reminders = [...reminders, reminder];
-        if (
-          reminder.status === ReminderStatus.active &&
-          moment(reminder.time) <= now
-        )
-          this.reminderCounter++;
-        break;
-    }
-
-    // update order & diff
-    this.reminders = this.digestReminders(reminders);
-
-    return reminder;
   }
 
   private deleteRminderFromList(
@@ -339,23 +279,172 @@ export class ReminderService {
           })
         );
     } catch (error) {
-      console.log('No reminder type config found.', error);
+      console.log('[R.S:1] No reminder type config found.', error);
     }
 
     return orderBy(types, 'name');
   }
 
-  private updateCounter(): void {
-    const now = new Date().getTime();
-    let count = 0;
-    let dueDate: number;
+  private getAssetUrlFromReminder(
+    reminder: Reminder,
+    absoluteUrl = false
+  ): string {
+    let url = '';
 
-    this.reminders.forEach((reminder) => {
-      dueDate = new Date(reminder.time).getTime();
-      if (dueDate <= now && reminder.status === ReminderStatus.active) count++;
+    if (absoluteUrl) {
+      url = `${location.origin}${location.pathname}${location.search}#`;
+    }
+
+    const assetType = reminder.isGroup ? 'group' : 'device';
+    url += `/${assetType}/${reminder.source.id}`;
+
+    return url;
+  }
+
+  private handleReminderUpdate(
+    message: Partial<RealtimeMessage<Reminder>>
+  ): Reminder | undefined {
+    let reminders = cloneDeep(this.reminders);
+    let now = moment();
+
+    if (message.realtimeAction === 'DELETE')
+      return this.deleteRminderFromList(message, reminders);
+
+    const reminder = this.digestReminders([message.data as Reminder])[0];
+
+    switch (message.realtimeAction) {
+      case 'UPDATE':
+        reminders = this._reminders.map((r) => {
+          if (r.id === reminder.id) r = reminder;
+          return r;
+        });
+        void this.fetchActiveReminderCounter();
+        break;
+      case 'CREATE':
+        reminders = [...reminders, reminder];
+        if (
+          reminder.status === ReminderStatus.active &&
+          moment(reminder.time) <= now
+        )
+          this.reminderCounter++;
+        break;
+    }
+
+    // update order & diff
+    this.reminders = this.digestReminders(reminders);
+
+    return reminder;
+  }
+
+  // all reminders whos `time` is in the past and are still active
+  private async fetchActiveReminderCounter(): Promise<number> {
+    let counter = 0;
+
+    try {
+      const response = await this.eventService.list({
+        type: REMINDER_TYPE,
+        pageSize: 1,
+        fragmentType: 'status',
+        fragmentValue: ReminderStatus.active,
+        withTotalPages: true,
+        dateFrom: '1970-01-01',
+        dateTo: moment().toISOString(),
+      });
+
+      counter = response?.paging?.totalPages || 0;
+    } catch (error) {
+      console.error(error); // TODO better error handling
+    }
+
+    this.reminderCounter = counter;
+
+    return counter;
+  }
+
+  private async fetchReminders(
+    pageSize: number,
+    currentPage = 1
+  ): Promise<Reminder[]> {
+    let reminders: Reminder[] = [];
+
+    try {
+      const response = await this.eventService.list({
+        type: REMINDER_TYPE,
+        withTotalPages: currentPage === 1,
+        pageSize,
+        currentPage,
+      });
+
+      reminders = response.data as Reminder[];
+    } catch (error) {
+      console.error(error); // TODO better error handling
+    }
+
+    return this.digestReminders(reminders);
+  }
+
+  private loadConfig(): void {
+    this._config = this.localStorageService.getOrDefault<ReminderConfig>(
+      REMINDER_LOCAL_STORAGE_CONFIG,
+      { toast: false, browser: false }
+    );
+    this.config$.next(this._config);
+  }
+
+  private async requestNotificationPermission(): Promise<boolean> {
+    if (!('Notification' in window)) {
+      console.log('[R.S:3] This browser does not support notifications.');
+      return false;
+    }
+
+    const response = await Notification.requestPermission();
+
+    return (this.hasNotificationPermission = response === 'granted');
+  }
+
+  private sendNotification(reminder: Reminder): void {
+    if (!this.activeTabService.isActive()) return;
+    if (this._config.browser) this.sendBrowserNotification(reminder);
+    if (this._config.toast) this.sendToast(reminder);
+  }
+
+  private sendBrowserNotification(reminder: Reminder): void {
+    if (!this.hasNotificationPermission) {
+      console.error(
+        '[R.S:2] Could not send browser notification, missing permission.'
+      );
+      return;
+    }
+
+    const notification: Notification = new Notification(
+      `${reminder.source.name}`,
+      {
+        body: `[DUE] ${reminder.text}`,
+        data: reminder,
+        tag: 'reminder.due',
+      }
+    );
+
+    notification.addEventListener('click', (event) => {
+      const reminder = event.currentTarget['data'] as Reminder;
+
+      window.open(this.getAssetUrlFromReminder(reminder, true), '_blank');
+      notification.close();
     });
+  }
 
-    this.reminderCounter = count;
+  private sendToast(reminder: Reminder): void {
+    const url = this.getAssetUrlFromReminder(reminder);
+    const icon = `<i [c8yIcon]="${
+      reminder.isGroup ? 'c8y-group-open' : 'c8y-device'
+    }"></i>`;
+
+    this.alertService.add({
+      type: 'warning',
+      text: `<a href="#${url}" class="full-click">${icon} ${reminder.source.name}</a><br />
+        <small>[DUE] ${reminder.text}</small>`,
+      allowHtml: true,
+    });
   }
 
   private setUpdateTimer(): void {
@@ -373,54 +462,66 @@ export class ReminderService {
 
     if (!closestReminder) return;
 
-    this.updateTimer = setTimeout(
-      () => (this.reminders = this.digestReminders(this.reminders)),
-      moment(closestReminder.time).diff(now)
+    this.updateTimer = setTimeout(() => {
+      this.reminders = this.digestReminders(this.reminders);
+      this.sendNotification(closestReminder);
+    }, moment(closestReminder.time).diff(now));
+  }
+
+  private setupConfigSubscription(): void {
+    this.localStorageService.storage$
+      .pipe(
+        map((config) => {
+          if (has(config, REMINDER_LOCAL_STORAGE_CONFIG))
+            return JSON.parse(
+              config[REMINDER_LOCAL_STORAGE_CONFIG]
+            ) as ReminderConfig;
+        })
+      )
+      .subscribe((config) => {
+        this.config$.next(config);
+      });
+  }
+
+  private setupReminderSubscription(): void {
+    this.subscriptions.add(
+      this.eventRealtimeService
+        .onAll$()
+        .pipe(
+          filter(
+            (message) =>
+              message.realtimeAction === 'DELETE' ||
+              (has(message.data, 'type') &&
+                message.data['type'] === REMINDER_TYPE)
+          ),
+          map((message) => message as RealtimeMessage<Reminder>)
+        )
+        .subscribe((message) => this.handleReminderUpdate(message))
     );
   }
 
-  private applyFilters(
-    groups: ReminderGroup[],
-    filters?: ReminderGroupFilter
-  ): ReminderGroup[] {
-    if (!filters) return groups;
+  async update(reminder: Reminder): Promise<IResult<Reminder>> {
+    const event: Partial<IEvent> = {
+      id: reminder.id,
+      status: reminder.status,
+    };
 
-    const keys = Object.keys(filters);
-    if (!keys.length) return groups;
+    // (un)set `isCleared` fragment to supoprt using retention rules for cleared reminders
+    event.isCleared = reminder.status === ReminderStatus.cleared ? {} : null;
 
-    groups.map((group) => {
-      group.reminders = group.reminders.filter((reminder) =>
-        this.applyReminderFilter(reminder, filters)
-      );
-      group.total = group.count;
-      group.count = group.reminders.length;
-      return group;
-    });
-
-    return groups;
+    return (await this.eventService.update(event)) as IResult<Reminder>;
   }
 
-  private applyReminderFilter(
-    reminder: Reminder,
-    filters: ReminderGroupFilter
-  ): Reminder {
-    const keys = Object.keys(filters);
-    if (!keys.length) return reminder;
+  private updateCounter(): void {
+    const now = new Date().getTime();
+    let count = 0;
+    let dueDate: number;
 
-    let check = true;
-    keys.forEach((key) => {
-      if (reminder[key] !== filters[key]) check = false;
+    this.reminders.forEach((reminder) => {
+      dueDate = new Date(reminder.time).getTime();
+      if (dueDate <= now && reminder.status === ReminderStatus.active) count++;
     });
 
-    if (!check) return;
-    return reminder;
-  }
-
-  private loadFilterConfig(): void {
-    const stored = JSON.parse(
-      localStorage.getItem(REMINDER_LOCAL_STORAGE_FILTER)
-    );
-
-    if (stored) this._filters = stored;
+    this.reminderCounter = count;
   }
 }

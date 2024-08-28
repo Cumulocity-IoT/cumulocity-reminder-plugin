@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import {
+  AlertModule,
   CoreModule,
   EventRealtimeService,
   hookAction,
@@ -20,6 +21,8 @@ import {
 } from './components';
 import { ReminderTypeComponent } from './components/reminder-type/reminder-type.component';
 import { DomService, ReminderService } from './services';
+import { ActiveTabService } from './services/active-tab.service';
+import { LocalStorageService } from './services/local-storage.service';
 
 @NgModule({
   declarations: [
@@ -31,31 +34,34 @@ import { DomService, ReminderService } from './services';
     TimeFieldType,
   ],
   imports: [
+    AssetSelectorModule,
+    AlertModule,
+    CollapseModule,
     CommonModule,
     CoreModule,
-    RouterModule,
-    AssetSelectorModule,
-    MomentModule,
     FormlyModule.forChild({
       types: [
         { name: 'time', component: TimeFieldType },
         { name: 'asset', component: AssetFieldType },
       ],
     }),
+    MomentModule,
+    RouterModule,
     TooltipModule,
-    CollapseModule,
   ],
   providers: [
-    EventRealtimeService,
-    ReminderService,
+    ActiveTabService,
     DomService,
+    EventRealtimeService,
+    LocalStorageService,
+    ReminderService,
     hookAction({
       component: ReminderIndicatorComponent,
     }),
   ],
 })
 export class ReminderPluginModule {
-  constructor(reminderService: ReminderService) {
-    reminderService.init(); // TODO better way to init?
+  constructor(private reminderService: ReminderService) {
+    this.reminderService.init();
   }
 }
