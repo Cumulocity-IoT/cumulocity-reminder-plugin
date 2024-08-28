@@ -22,7 +22,7 @@ export interface Reminder extends IEvent {
 
 export interface ReminderConfig {
   browser?: boolean;
-  filter?: ReminderGroupFilter; // TODO switch to single config
+  filter?: ReminderGroupFilter;
   toast?: boolean;
 }
 

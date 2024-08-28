@@ -3,15 +3,15 @@ import {
   EventService,
   IEvent,
   IResult,
-  TenantOptionsService,
+  TenantOptionsService
 } from '@c8y/client';
 import {
   AlertService,
   EventRealtimeService,
-  RealtimeMessage,
+  RealtimeMessage
 } from '@c8y/ngx-components';
 import { TranslateService } from '@ngx-translate/core';
-import { cloneDeep, filter as _filter, has, orderBy, sortBy } from 'lodash';
+import { cloneDeep, filter as _filter, has, isEqual, orderBy, sortBy } from 'lodash';
 import moment from 'moment';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -26,10 +26,9 @@ import {
   ReminderType,
   REMINDER_INITIAL_QUERY_SIZE,
   REMINDER_LOCAL_STORAGE_CONFIG,
-  REMINDER_LOCAL_STORAGE_FILTER,
   REMINDER_TENENAT_OPTION_CATEGORY,
   REMINDER_TENENAT_OPTION_TYPE_KEY,
-  REMINDER_TYPE,
+  REMINDER_TYPE
 } from '../reminder.model';
 import { ActiveTabService } from './active-tab.service';
 import { DomService } from './dom.service';
@@ -38,13 +37,10 @@ import { LocalStorageService } from './local-storage.service';
 @Injectable()
 export class ReminderService {
   config$ = new BehaviorSubject<ReminderConfig>({});
+  filters$ = new BehaviorSubject<ReminderGroupFilter>({});
   open$?: BehaviorSubject<boolean>;
   reminders$ = new BehaviorSubject<Reminder[]>([]);
   reminderCounter$ = new BehaviorSubject<number>(0);
-
-  get filters(): ReminderGroupFilter {
-    return this._filters;
-  }
 
   get types(): ReminderType[] {
     return this._types;
@@ -56,7 +52,6 @@ export class ReminderService {
   private drawerRef?: ComponentRef<unknown>;
   private updateTimer?: NodeJS.Timeout;
 
-  private _filters: ReminderGroupFilter;
   private _reminderCounter = 0;
   private _reminders: Reminder[] = [];
   private _types: ReminderType[] = [];
@@ -106,7 +101,6 @@ export class ReminderService {
     if (this.drawer) return;
 
     this.loadConfig();
-    this.loadFilterConfig(); // TODO join with config
     this.requestNotificationPermission();
     this._types = await this.fetchReminderTypes();
     void this.fetchActiveReminderCounter();
@@ -126,7 +120,7 @@ export class ReminderService {
 
   groupReminders(
     reminders: Reminder[],
-    filters = this._filters
+    filter?: ReminderGroupFilter
   ): ReminderGroup[] {
     let dueDate: number;
     const now = new Date().getTime();
@@ -167,31 +161,29 @@ export class ReminderService {
     upcoming.reminders = sortBy(upcoming.reminders, ['time']);
     cleared.reminders = sortBy(cleared.reminders, ['lastUpdated']).reverse();
 
-    this._filters = filters;
+    if (filter) this.setConfig('filter', filter);
 
-    return this.applyFilters([due, upcoming, cleared], filters);
+    return this.applyFilter([due, upcoming, cleared], filter);
   }
 
   resetFilterConfig(): void {
-    this.localStorageService.delete(REMINDER_LOCAL_STORAGE_FILTER);
+    delete this._config.filter;
+    this.config$.next(this._config);
   }
 
   setConfig(key: string, value: any): void {
+    if (isEqual(this._config[key], value)) return;
+
     this._config[key] = value;
     this.localStorageService.set(REMINDER_LOCAL_STORAGE_CONFIG, this._config);
-  }
-
-  storeFilterConfig(): void {
-    if (!this.filters) this.resetFilterConfig();
-
-    this.localStorageService.set(REMINDER_LOCAL_STORAGE_FILTER, this.filters);
+    this.config$.next(this._config);
   }
 
   toggleDrawer() {
     this.drawer?.toggle();
   }
 
-  private applyFilters(
+  private applyFilter(
     groups: ReminderGroup[],
     filters?: ReminderGroupFilter
   ): ReminderGroup[] {
@@ -391,14 +383,6 @@ export class ReminderService {
     return this.digestReminders(reminders);
   }
 
-  private loadFilterConfig(): void {
-    const stored = this.localStorageService.get<ReminderGroupFilter>(
-      REMINDER_LOCAL_STORAGE_FILTER
-    );
-
-    if (stored) this._filters = stored;
-  }
-
   private loadConfig(): void {
     this._config = this.localStorageService.getOrDefault<ReminderConfig>(
       REMINDER_LOCAL_STORAGE_CONFIG,
@@ -409,7 +393,7 @@ export class ReminderService {
 
   private async requestNotificationPermission(): Promise<boolean> {
     if (!('Notification' in window)) {
-      console.log('This browser does not support notifications.');
+      console.log('[R.S:3] This browser does not support notifications.');
       return false;
     }
 

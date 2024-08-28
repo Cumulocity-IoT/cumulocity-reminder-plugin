@@ -1,8 +1,8 @@
 import { Component, OnDestroy } from '@angular/core';
 import { AlertService, HeaderService } from '@c8y/ngx-components';
-import { has } from 'lodash';
+import { has, isEqual } from 'lodash';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BehaviorSubject, Subscription } from 'rxjs';
+import { BehaviorSubject, filter, Subscription } from 'rxjs';
 import {
   Reminder,
   ReminderConfig,
@@ -72,23 +72,25 @@ export class ReminderDrawerComponent implements OnDestroy {
     });
   }
 
-  filterReminders(): void {
+  filterReminders(storeFilters = true): void {
+    const filter = this.buildFilter();
     this.reminderGroups = this.reminderService.groupReminders(
       this.reminders,
-      this.buildFilter()
+      filter
     );
-    this.reminderService.storeFilterConfig();
+
+    if (storeFilters) this.setConfig('filter', filter);
   }
 
-  setConfig(configOption: string, status: boolean) {
+  setConfig(configOption: string, status: any) {
     this.reminderService.setConfig(configOption, status);
   }
 
-  setTypeFilter(type: ReminderType['id']): void {
+  setTypeFilter(type: ReminderType['id'], storeFilters = true): void {
     if (!this.types.length) return;
 
     this.typeFilter = type;
-    this.filterReminders();
+    this.filterReminders(storeFilters);
   }
 
   toggle(open?: boolean): boolean {
@@ -127,10 +129,11 @@ export class ReminderDrawerComponent implements OnDestroy {
       return;
     }
 
-    const filters = this.reminderService.filters;
+    const config = this.reminderService.config$.getValue();
+    const filter = config.filter as ReminderGroupFilter;
 
-    if (has(filters, REMINDER_TYPE_FRAGMENT))
-      this.typeFilter = filters[REMINDER_TYPE_FRAGMENT];
+    if (has(filter, REMINDER_TYPE_FRAGMENT))
+      this.typeFilter = filter[REMINDER_TYPE_FRAGMENT];
   }
 
   private initSubscriptions(): void {
@@ -155,9 +158,17 @@ export class ReminderDrawerComponent implements OnDestroy {
 
     // get config updates
     this.subscriptions.add(
-      this.reminderService.config$.subscribe((config) => {
-        this.config = config;
-      })
+      this.reminderService.config$
+        .pipe(filter((config) => !isEqual(config, this.config)))
+        .subscribe((config) => {
+          this.config = config;
+          this.setTypeFilter(
+            config.filter && has(config.filter, REMINDER_TYPE_FRAGMENT)
+              ? config.filter[REMINDER_TYPE_FRAGMENT]
+              : '',
+            false
+          );
+        })
     );
   }
 
