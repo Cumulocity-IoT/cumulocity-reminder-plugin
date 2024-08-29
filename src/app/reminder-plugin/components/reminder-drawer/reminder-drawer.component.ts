@@ -1,20 +1,17 @@
 import { Component, OnDestroy } from '@angular/core';
 import { AlertService, HeaderService } from '@c8y/ngx-components';
-import { has, isEqual } from 'lodash';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BehaviorSubject, filter, Subscription } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import {
   Reminder,
   ReminderConfig,
   ReminderGroup,
-  ReminderGroupFilter,
   ReminderGroupStatus,
   ReminderStatus,
   ReminderType,
   REMINDER_DRAWER_OPEN_CLASS,
   REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG,
-  REMINDER_MAIN_HEADER_CLASS,
-  REMINDER_TYPE_FRAGMENT,
+  REMINDER_MAIN_HEADER_CLASS
 } from '../../reminder.model';
 import { ReminderService } from '../../services/reminder.service';
 import { ReminderModalComponent } from '../reminder-modal/reminder-modal.component';
@@ -26,17 +23,21 @@ import { ReminderModalComponent } from '../reminder-modal/reminder-modal.compone
 })
 export class ReminderDrawerComponent implements OnDestroy {
   open$ = new BehaviorSubject<boolean>(this.open);
-  config: ReminderConfig;
   reminders: Reminder[] = [];
   reminderGroups: ReminderGroup[] = [];
   lastUpdate?: Date;
   types: ReminderType[] = [];
 
   // for template
+  reminderTypeFilter: string =
+    REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG.filter.reminderType;
+  toastNotificationsEnabled: ReminderConfig['toast'] =
+    REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG.toast;
+  browserNotificationsEnabled: ReminderConfig['browser'] =
+    REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG.browser;
   reminderStatus = ReminderStatus;
   reminderGroupStatus = ReminderGroupStatus;
   groupIsExpanded: boolean[] = [true, true, false];
-  typeFilter = '';
 
   get open(): boolean {
     return this._open;
@@ -58,7 +59,7 @@ export class ReminderDrawerComponent implements OnDestroy {
     private modalService: BsModalService,
     private reminderService: ReminderService
   ) {
-    this.initFilter();
+    this.getReminderTypes();
     this.initSubscriptions();
   }
 
@@ -73,25 +74,35 @@ export class ReminderDrawerComponent implements OnDestroy {
     });
   }
 
-  filterReminders(storeFilters = true): void {
-    const filter = this.buildFilter();
-    this.reminderGroups = this.reminderService.groupReminders(
-      this.reminders,
-      filter
-    );
+  setFilter(type?: ReminderType['id']): void {
+    if (type) this.reminderTypeFilter = type;
 
-    if (storeFilters) this.setConfig('filter', filter);
+    this.setConfig('filter');
+    this.filterByType();
   }
 
-  setConfig(configOption: string, status: any) {
-    this.reminderService.setConfig(configOption, status);
-  }
-
-  setTypeFilter(type: ReminderType['id'], storeFilters = true): void {
+  filterByType(): void {
     if (!this.types.length) return;
 
-    this.typeFilter = type;
-    this.filterReminders(storeFilters);
+    this.reminderGroups = this.reminderService.groupReminders(this.reminders);
+  }
+
+  setConfig(configOption: string) {
+    let value: any;
+    switch (configOption) {
+      case 'filter':
+        // this.reminderGroups = this.reminderService.groupReminders(this.reminders);
+        value = { reminderType: this.reminderTypeFilter };
+        break;
+      case 'toast':
+        value = this.toastNotificationsEnabled;
+        break;
+      case 'browser':
+        value = this.browserNotificationsEnabled;
+        break;
+    }
+
+    this.reminderService.setConfig(configOption, value);
   }
 
   toggle(open?: boolean): boolean {
@@ -103,38 +114,27 @@ export class ReminderDrawerComponent implements OnDestroy {
     return this.open;
   }
 
-  private buildFilter(): ReminderGroupFilter {
-    const filters: ReminderGroupFilter = {};
-
-    // populate filters
-    if (this.typeFilter !== '')
-      filters[REMINDER_TYPE_FRAGMENT] = this.typeFilter;
-
-    return Object.keys(filters).length > 0 ? filters : null;
-  }
-
   private digestReminders(reminders: Reminder[]): void {
     this.reminders = reminders;
     this.lastUpdate = new Date();
-    this.reminderGroups = this.reminderService.groupReminders(
-      reminders,
-      this.buildFilter()
-    );
+    this.reminderGroups = this.reminderService.groupReminders(reminders);
   }
 
-  private initFilter(): void {
+  private getReminderTypes(): void {
     this.types = this.reminderService.types;
 
-    if (!this.types.length) {
-      this.reminderService.resetFilterConfig();
-      return;
+    // prevent obsolte configs to remain in local storage
+    if (!this.types.length) this.reminderService.resetFilterConfig();
+  }
+
+  private handleConfigChange(config: ReminderConfig): void {
+    if (this.reminderTypeFilter !== config.filter.reminderType) {
+      this.reminderTypeFilter = config.filter.reminderType;
+      this.filterByType();
     }
 
-    const config = this.reminderService.config$.getValue();
-    const filter = config.filter as ReminderGroupFilter;
-
-    if (has(filter, REMINDER_TYPE_FRAGMENT))
-      this.typeFilter = filter[REMINDER_TYPE_FRAGMENT];
+    this.toastNotificationsEnabled = config.toast;
+    this.browserNotificationsEnabled = config.browser;
   }
 
   private initSubscriptions(): void {
@@ -159,18 +159,9 @@ export class ReminderDrawerComponent implements OnDestroy {
 
     // get config updates
     this.subscriptions.add(
-      this.reminderService.config$
-        .pipe(filter((config) => !isEqual(config, this.config)))
-        .subscribe((config) => {
-          // fallback in case of corrupted config
-          this.config = { ...REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG, ...config };
-          this.setTypeFilter(
-            has(this.config.filter, REMINDER_TYPE_FRAGMENT)
-              ? this.config.filter[REMINDER_TYPE_FRAGMENT]
-              : null,
-            false
-          );
-        })
+      this.reminderService.config$.subscribe((config) =>
+        this.handleConfigChange(config)
+      )
     );
   }
 
