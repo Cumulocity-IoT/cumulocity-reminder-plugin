@@ -11,6 +11,11 @@ export const REMINDER_TENENAT_OPTION_CATEGORY: ITenantOption['category'] = 'c8y.
 export const REMINDER_TENENAT_OPTION_TYPE_KEY: ITenantOption['key'] = 'types';
 export const REMINDER_LOCAL_STORAGE_FILTER = 'c8y_rpFilter';
 export const REMINDER_LOCAL_STORAGE_CONFIG = 'c8y_rpConfig';
+export const REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG = {
+  toast: false,
+  browser: false,
+  filter: { reminderType: '' },
+};
 
 export interface Reminder extends IEvent {
   status: ReminderStatus;

@@ -3,15 +3,22 @@ import {
   EventService,
   IEvent,
   IResult,
-  TenantOptionsService
+  TenantOptionsService,
 } from '@c8y/client';
 import {
   AlertService,
   EventRealtimeService,
-  RealtimeMessage
+  RealtimeMessage,
 } from '@c8y/ngx-components';
 import { TranslateService } from '@ngx-translate/core';
-import { cloneDeep, filter as _filter, has, isEqual, orderBy, sortBy } from 'lodash';
+import {
+  cloneDeep,
+  filter as _filter,
+  has,
+  isEqual,
+  orderBy,
+  sortBy,
+} from 'lodash';
 import moment from 'moment';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -26,9 +33,10 @@ import {
   ReminderType,
   REMINDER_INITIAL_QUERY_SIZE,
   REMINDER_LOCAL_STORAGE_CONFIG,
+  REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG,
   REMINDER_TENENAT_OPTION_CATEGORY,
   REMINDER_TENENAT_OPTION_TYPE_KEY,
-  REMINDER_TYPE
+  REMINDER_TYPE,
 } from '../reminder.model';
 import { ActiveTabService } from './active-tab.service';
 import { DomService } from './dom.service';
@@ -386,7 +394,7 @@ export class ReminderService {
   private loadConfig(): void {
     this._config = this.localStorageService.getOrDefault<ReminderConfig>(
       REMINDER_LOCAL_STORAGE_CONFIG,
-      { toast: false, browser: false, filter: null }
+      REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG
     );
     this.config$.next(this._config);
   }

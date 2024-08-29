@@ -12,6 +12,7 @@ import {
   ReminderStatus,
   ReminderType,
   REMINDER_DRAWER_OPEN_CLASS,
+  REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG,
   REMINDER_MAIN_HEADER_CLASS,
   REMINDER_TYPE_FRAGMENT,
 } from '../../reminder.model';
@@ -161,11 +162,12 @@ export class ReminderDrawerComponent implements OnDestroy {
       this.reminderService.config$
         .pipe(filter((config) => !isEqual(config, this.config)))
         .subscribe((config) => {
-          this.config = config;
+          // fallback in case of corrupted config
+          this.config = { ...REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG, ...config };
           this.setTypeFilter(
-            config.filter && has(config.filter, REMINDER_TYPE_FRAGMENT)
+            has(this.config.filter, REMINDER_TYPE_FRAGMENT)
               ? config.filter[REMINDER_TYPE_FRAGMENT]
-              : '',
+              : null,
             false
           );
         })
