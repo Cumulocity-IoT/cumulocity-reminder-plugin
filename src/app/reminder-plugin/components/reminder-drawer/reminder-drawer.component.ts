@@ -166,7 +166,7 @@ export class ReminderDrawerComponent implements OnDestroy {
           this.config = { ...REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG, ...config };
           this.setTypeFilter(
             has(this.config.filter, REMINDER_TYPE_FRAGMENT)
-              ? config.filter[REMINDER_TYPE_FRAGMENT]
+              ? this.config.filter[REMINDER_TYPE_FRAGMENT]
               : null,
             false
           );
