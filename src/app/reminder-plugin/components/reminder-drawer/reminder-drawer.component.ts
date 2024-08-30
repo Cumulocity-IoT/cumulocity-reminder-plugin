@@ -10,8 +10,9 @@ import {
   ReminderStatus,
   ReminderType,
   REMINDER_DRAWER_OPEN_CLASS,
+  REMINDER_HIGHLIGHT_DURATION_SECONDS,
   REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG,
-  REMINDER_MAIN_HEADER_CLASS
+  REMINDER_MAIN_HEADER_CLASS,
 } from '../../reminder.model';
 import { ReminderService } from '../../services/reminder.service';
 import { ReminderModalComponent } from '../reminder-modal/reminder-modal.component';
@@ -52,6 +53,7 @@ export class ReminderDrawerComponent implements OnDestroy {
   private rightDrawerOpen = false;
   private updateTimer?: NodeJS.Timeout;
   private _open = false;
+  private _previousState: Reminder['id'][][] = [];
 
   constructor(
     private alertService: AlertService,
@@ -118,6 +120,8 @@ export class ReminderDrawerComponent implements OnDestroy {
     this.reminders = reminders;
     this.lastUpdate = new Date();
     this.reminderGroups = this.reminderService.groupReminders(reminders);
+
+    if (reminders.length) this.highlightChanges();
   }
 
   private getReminderTypes(): void {
@@ -128,13 +132,35 @@ export class ReminderDrawerComponent implements OnDestroy {
   }
 
   private handleConfigChange(config: ReminderConfig): void {
-    if (this.reminderTypeFilter !== config.filter.reminderType) {
+    if (this.reminderTypeFilter !== config.filter?.reminderType) {
       this.reminderTypeFilter = config.filter.reminderType;
       this.filterByType();
     }
 
     this.toastNotificationsEnabled = config.toast;
     this.browserNotificationsEnabled = config.browser;
+  }
+
+  private highlightChanges(): void {
+    if (!this._previousState.length) return;
+
+    // check if a reminder is new in a group
+    this.reminderGroups.forEach((group, index) => {
+      group.reminders.forEach((reminder) => {
+        if (!this._previousState[index].includes(reminder.id)) {
+          reminder.changed = true;
+          setTimeout(
+            () => delete reminder.changed,
+            REMINDER_HIGHLIGHT_DURATION_SECONDS * 1000
+          );
+        }
+      });
+    });
+
+    // store current state for future comparison
+    this._previousState = this.reminderGroups.map((group) => {
+      return group.reminders.map((reminder) => reminder.id);
+    });
   }
 
   private initSubscriptions(): void {

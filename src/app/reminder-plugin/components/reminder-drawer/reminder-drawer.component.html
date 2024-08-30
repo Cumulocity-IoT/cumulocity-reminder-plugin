@@ -114,7 +114,10 @@
 
 <!-- single reminder item template -->
 <ng-template #reminderItem let-reminder="reminder">
-  <li class="reminder-item" [class.text-muted]="reminder.status !== reminderStatus.active">
+  <li class="reminder-item" [ngClass]="{
+    'text-muted': reminder.status !== reminderStatus.active,
+    'changed': reminder.changed
+  }">
     <header>
       <i
         class="status-icon"
