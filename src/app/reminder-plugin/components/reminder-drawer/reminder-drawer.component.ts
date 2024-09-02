@@ -1,5 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
 import { AlertService, HeaderService } from '@c8y/ngx-components';
+import { has } from 'lodash';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import {
@@ -132,7 +133,7 @@ export class ReminderDrawerComponent implements OnDestroy {
   }
 
   private handleConfigChange(config: ReminderConfig): void {
-    if (this.reminderTypeFilter !== config.filter?.reminderType) {
+    if (has(config.filter, 'remidnerType') && this.reminderTypeFilter !== config.filter?.reminderType) {
       this.reminderTypeFilter = config.filter.reminderType;
       this.filterByType();
     }

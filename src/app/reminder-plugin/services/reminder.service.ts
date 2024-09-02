@@ -214,7 +214,8 @@ export class ReminderService {
     const config = this.config$.getValue();
 
     // populate filters
-    filters[REMINDER_TYPE_FRAGMENT] = config.filter[REMINDER_TYPE_FRAGMENT];
+    if (has(config.filter, 'remidnerType'))
+      filters[REMINDER_TYPE_FRAGMENT] = config.filter[REMINDER_TYPE_FRAGMENT];
 
     return Object.keys(filters).length > 0 ? filters : null;
   }
@@ -387,7 +388,8 @@ export class ReminderService {
     const filter = this.buildTypeFilter();
     this.setConfig('filter', filter);
 
-    if (filter[REMINDER_TYPE_FRAGMENT] === '') return groups;
+    const config = this.config$.getValue();
+    if (!has(config.filter, 'remidnerType') || filter[REMINDER_TYPE_FRAGMENT] === '') return groups;
 
     const keys = Object.keys(filter);
     if (!keys.length) return groups;
