@@ -148,7 +148,6 @@ export class ReminderDrawerComponent implements OnDestroy {
     this.reminderGroups.forEach((group, index) => {
       group.reminders.forEach((reminder) => {
         if (!this._previousState[index]?.includes(reminder.id)) {
-          console.log('highlight', reminder.id);
           reminder.changed = true;
           setTimeout(
             () => delete reminder.changed,
