@@ -145,17 +145,18 @@ export class ReminderDrawerComponent implements OnDestroy {
     if (!this.reminders.length) return;
 
     // check if a reminder is new in a group
-    this.reminderGroups.forEach((group, index) => {
-      group.reminders.forEach((reminder) => {
-        if (!this._previousState[index]?.includes(reminder.id)) {
-          reminder.changed = true;
-          setTimeout(
-            () => delete reminder.changed,
-            REMINDER_HIGHLIGHT_DURATION_SECONDS * 1000
-          );
-        }
+    if (this._previousState.length)
+      this.reminderGroups.forEach((group, index) => {
+        group.reminders.forEach((reminder) => {
+          if (!this._previousState[index]?.includes(reminder.id)) {
+            reminder.changed = true;
+            setTimeout(
+              () => delete reminder.changed,
+              REMINDER_HIGHLIGHT_DURATION_SECONDS * 1000
+            );
+          }
+        });
       });
-    });
 
     // store current state for future comparison
     this._previousState = this.reminderGroups.map((group) => {
