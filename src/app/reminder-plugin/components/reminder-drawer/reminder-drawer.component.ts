@@ -142,12 +142,13 @@ export class ReminderDrawerComponent implements OnDestroy {
   }
 
   private highlightChanges(): void {
-    if (!this._previousState.length) return;
+    if (!this.reminders.length) return;
 
     // check if a reminder is new in a group
     this.reminderGroups.forEach((group, index) => {
       group.reminders.forEach((reminder) => {
-        if (!this._previousState[index].includes(reminder.id)) {
+        if (!this._previousState[index]?.includes(reminder.id)) {
+          console.log('highlight', reminder.id);
           reminder.changed = true;
           setTimeout(
             () => delete reminder.changed,
