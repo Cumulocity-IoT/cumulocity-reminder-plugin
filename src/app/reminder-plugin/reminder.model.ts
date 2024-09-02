@@ -7,10 +7,16 @@ export const REMINDER_DRAWER_OPEN_CLASS = 'drawerOpen';
 export const REMINDER_MAIN_HEADER_CLASS = 'app-main-header';
 export const REMINDER_MAX_COUNTER = 10;
 export const REMINDER_TEXT_LENGTH = 100;
+export const REMINDER_HIGHLIGHT_DURATION_SECONDS = 5;
 export const REMINDER_TENENAT_OPTION_CATEGORY: ITenantOption['category'] = 'c8y.reminder';
 export const REMINDER_TENENAT_OPTION_TYPE_KEY: ITenantOption['key'] = 'types';
 export const REMINDER_LOCAL_STORAGE_FILTER = 'c8y_rpFilter';
 export const REMINDER_LOCAL_STORAGE_CONFIG = 'c8y_rpConfig';
+export const REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG = {
+  toast: false,
+  browser: false,
+  filter: { reminderType: '' },
+};
 
 export interface Reminder extends IEvent {
   status: ReminderStatus;

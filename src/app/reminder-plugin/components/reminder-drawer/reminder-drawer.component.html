@@ -16,6 +16,8 @@
   </ul>
 
   <div class="body">
+    <pre>{{ config | json }}</pre>
+
     <!-- filter: reminder type -->
     <div *ngIf="types.length">
       <label for="reminder-type-filter" translate>Filter by Reminder Type</label>
@@ -24,8 +26,8 @@
           id="reminder-type-filter"
           name="reminder-type"
           class="form-control"
-          (change)="filterReminders()"
-          [(ngModel)]="typeFilter"
+          [(ngModel)]="reminderTypeFilter"
+          (change)="setFilter()"
         >
           <option value="">{{ 'Not filtered' | translate }}</option>
           <option *ngFor="let type of types" [ngValue]="type.id">{{ type.name }}</option>
@@ -87,8 +89,8 @@
         <input
           type="checkbox"
           name="toast-notifications-enabled"
-          [ngModel]="config.toast"
-          (change)="setConfig('toast', $event.currentTarget.checked)"
+          [(ngModel)]="toastNotificationsEnabled"
+          (change)="setConfig('toast')"
         />
         <span></span>
         {{ 'Toast Notifications' | translate }}
@@ -100,8 +102,8 @@
         <input
           type="checkbox"
           name="browser-notifications-enabled"
-          [ngModel]="config.browser"
-          (change)="setConfig('browser', $event.currentTarget.checked)"
+          [(ngModel)]="browserNotificationsEnabled"
+          (change)="setConfig('browser')"
         />
         <span></span>
         {{ 'Browser Notifications' | translate }}
@@ -112,7 +114,10 @@
 
 <!-- single reminder item template -->
 <ng-template #reminderItem let-reminder="reminder">
-  <li class="reminder-item" [class.text-muted]="reminder.status !== reminderStatus.active">
+  <li class="reminder-item" [ngClass]="{
+    'text-muted': reminder.status !== reminderStatus.active,
+    'changed': reminder.changed
+  }">
     <header>
       <i
         class="status-icon"
@@ -182,7 +187,7 @@
 
     <footer>
       <!-- type -->
-      <button *ngIf="types.length && reminder.reminderType" type="button" class="btn btn-clean" (click)="setTypeFilter(reminder.reminderType)">
+      <button *ngIf="types.length && reminder.reminderType" type="button" class="btn btn-clean" (click)="setFilter(reminder.reminderType)">
         <i class="m-r-4" [c8yIcon]="'tag'"></i>
         <c8y-reminder-type [id]="reminder.reminderType"></c8y-reminder-type>
       </button>

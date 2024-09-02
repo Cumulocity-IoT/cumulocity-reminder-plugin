@@ -129,6 +129,24 @@ aside {
   overflow: hidden;
   box-shadow: inset 0 -1px 0 var(--c8y-component-border-color, var(--c8y-root-component-border-color));
 
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: block;
+    opacity: 0;
+    pointer-events: none;
+    transition: all .3s ease-in-out;
+    box-shadow: inset 0 0 10px var(--c8y-brand-primary);
+  }
+
+  &.changed::after {
+    opacity: 1;
+  }
+
   .btn-hollow {
     background-color: transparent !important;
     color: @color-gray-4;
