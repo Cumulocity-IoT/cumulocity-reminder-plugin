@@ -47,7 +47,6 @@ export class ReminderDrawerComponent implements OnDestroy {
     return this._contextFilterEnabled;
   }
   set contextFilterEnabled(enabled: boolean) {
-    console.log('contextFilterEnabled', enabled);
     this._contextFilterEnabled = enabled;
     this.setConfig('useContext');
     this.filterByType();
@@ -95,7 +94,6 @@ export class ReminderDrawerComponent implements OnDestroy {
 
   async setFilter(type?: ReminderType['id']): Promise<void> {
     await this.sleep(1000);
-    console.log('setFilter');
     if (type) this.reminderTypeFilter = type;
 
     this.setConfig('filter');
