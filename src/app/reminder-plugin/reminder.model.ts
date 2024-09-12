@@ -1,5 +1,6 @@
 import { IEvent, ITenantOption } from '@c8y/client';
 
+export const REMINDER_ASSET_CONTEXT_ROOTS = ['group', 'device'];
 export const REMINDER_TYPE = 'c8y_Reminder';
 export const REMINDER_TYPE_FRAGMENT = 'reminderType';
 export const REMINDER_INITIAL_QUERY_SIZE = 100;
@@ -12,10 +13,11 @@ export const REMINDER_TENENAT_OPTION_CATEGORY: ITenantOption['category'] = 'c8y.
 export const REMINDER_TENENAT_OPTION_TYPE_KEY: ITenantOption['key'] = 'types';
 export const REMINDER_LOCAL_STORAGE_FILTER = 'c8y_rpFilter';
 export const REMINDER_LOCAL_STORAGE_CONFIG = 'c8y_rpConfig';
-export const REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG = {
+export const REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG: ReminderConfig = {
   toast: false,
   browser: false,
   filter: { reminderType: '' },
+  useContext: false,
 };
 
 export interface Reminder extends IEvent {
@@ -30,6 +32,7 @@ export interface ReminderConfig {
   browser?: boolean;
   filter?: ReminderGroupFilter;
   toast?: boolean;
+  useContext?: boolean;
 }
 
 export interface ReminderGroup {

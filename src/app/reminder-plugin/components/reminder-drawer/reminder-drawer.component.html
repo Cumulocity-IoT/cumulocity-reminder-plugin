@@ -16,10 +16,8 @@
   </ul>
 
   <div class="body">
-    <pre>{{ config | json }}</pre>
-
     <!-- filter: reminder type -->
-    <div *ngIf="types.length">
+    <div *ngIf="types.length" class="filter">
       <label for="reminder-type-filter" translate>Filter by Reminder Type</label>
       <div class="c8y-select-wrapper">
         <select
@@ -33,6 +31,19 @@
           <option *ngFor="let type of types" [ngValue]="type.id">{{ type.name }}</option>
         </select>
       </div>
+    </div>
+
+    <!-- context filter -->
+    <div class="filter">
+      <label class="c8y-switch">
+        <input
+          type="checkbox"
+          name="context-filter-enabled"
+          [(ngModel)]="contextFilterEnabled"
+        />
+        <span></span>
+        {{ 'Filter by Current Context' | translate }}
+      </label>
     </div>
 
     <!-- list of reminders -->

@@ -3,20 +3,15 @@ import {
   EventService,
   IEvent,
   IResult,
-  TenantOptionsService
+  TenantOptionsService,
 } from '@c8y/client';
 import {
   AlertService,
   EventRealtimeService,
-  RealtimeMessage
+  RealtimeMessage,
 } from '@c8y/ngx-components';
 import { TranslateService } from '@ngx-translate/core';
-import {
-  cloneDeep,
-  filter as _filter,
-  has, orderBy,
-  sortBy
-} from 'lodash';
+import { cloneDeep, filter as _filter, has, orderBy, sortBy } from 'lodash';
 import moment from 'moment';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -35,7 +30,7 @@ import {
   REMINDER_TENENAT_OPTION_CATEGORY,
   REMINDER_TENENAT_OPTION_TYPE_KEY,
   REMINDER_TYPE,
-  REMINDER_TYPE_FRAGMENT
+  REMINDER_TYPE_FRAGMENT,
 } from '../reminder.model';
 import { ActiveTabService } from './active-tab.service';
 import { DomService } from './dom.service';
@@ -124,7 +119,7 @@ export class ReminderService {
     return type ? type.name : 'Unknown';
   }
 
-  groupReminders(reminders: Reminder[]): ReminderGroup[] {
+  groupReminders(reminders: Reminder[], context?: string): ReminderGroup[] {
     let dueDate: number;
     const now = new Date().getTime();
     const cleared: ReminderGroup = {
@@ -161,7 +156,10 @@ export class ReminderService {
       }
     });
 
-    return this.filterReminder(this.sortReminder(due, upcoming, cleared));
+    return this.filterReminder(
+      this.sortReminder(due, upcoming, cleared),
+      context
+    );
   }
 
   resetFilterConfig(): void {
@@ -178,7 +176,7 @@ export class ReminderService {
   }
 
   toggleDrawer() {
-    this.drawer?.toggle();
+    this.drawer?.toggleDrawer();
   }
 
   async update(reminder: Reminder): Promise<IResult<Reminder>> {
@@ -191,6 +189,28 @@ export class ReminderService {
     event.isCleared = reminder.status === ReminderStatus.cleared ? {} : null;
 
     return (await this.eventService.update(event)) as IResult<Reminder>;
+  }
+
+  private applyContextFilter(
+    groups: ReminderGroup[],
+    context?: string
+  ): ReminderGroup[] {
+    const config = this.config$.getValue();
+
+    if (!has(config, 'useContext') || !config.useContext || !context)
+      return groups;
+
+    groups.map((group) => {
+      group.total = group.reminders.length;
+      group.reminders = group.reminders.filter(
+        (reminder) => reminder.source.id === context
+      );
+      group.count = group.reminders.length;
+
+      return group;
+    });
+
+    return groups;
   }
 
   private applyReminderFilter(
@@ -214,7 +234,7 @@ export class ReminderService {
     const config = this.config$.getValue();
 
     // populate filters
-    if (has(config.filter, 'remidnerType'))
+    if (has(config.filter, 'reminderType'))
       filters[REMINDER_TYPE_FRAGMENT] = config.filter[REMINDER_TYPE_FRAGMENT];
 
     return Object.keys(filters).length > 0 ? filters : null;
@@ -383,13 +403,24 @@ export class ReminderService {
     return this.digestReminders(reminders);
   }
 
-  private filterReminder(groups: ReminderGroup[]): ReminderGroup[] {
+  private filterReminder(
+    groups: ReminderGroup[],
+    context?: string
+  ): ReminderGroup[] {
     // store filter setting to local storage
     const filter = this.buildTypeFilter();
     this.setConfig('filter', filter);
 
     const config = this.config$.getValue();
-    if (!has(config.filter, 'remidnerType') || filter[REMINDER_TYPE_FRAGMENT] === '') return groups;
+
+    groups = this.applyContextFilter(groups, context);
+
+    // type filter
+    if (
+      !has(config.filter, 'reminderType') ||
+      filter[REMINDER_TYPE_FRAGMENT] === ''
+    )
+      return groups;
 
     const keys = Object.keys(filter);
     if (!keys.length) return groups;
@@ -398,7 +429,8 @@ export class ReminderService {
       group.reminders = group.reminders.filter((reminder) =>
         this.applyReminderFilter(reminder, filter)
       );
-      group.total = group.count;
+      if (!has(group, 'total') || group.total > group.count)
+        group.total = group.count;
       group.count = group.reminders.length;
       return group;
     });

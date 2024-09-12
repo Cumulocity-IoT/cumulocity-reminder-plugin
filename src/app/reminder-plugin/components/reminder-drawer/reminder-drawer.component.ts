@@ -1,6 +1,7 @@
 import { Component, OnDestroy } from '@angular/core';
+import { NavigationEnd, Router } from '@angular/router';
 import { AlertService, HeaderService } from '@c8y/ngx-components';
-import { has } from 'lodash';
+import { has, isEmpty } from 'lodash';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import {
@@ -10,6 +11,7 @@ import {
   ReminderGroupStatus,
   ReminderStatus,
   ReminderType,
+  REMINDER_ASSET_CONTEXT_ROOTS,
   REMINDER_DRAWER_OPEN_CLASS,
   REMINDER_HIGHLIGHT_DURATION_SECONDS,
   REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG,
@@ -41,6 +43,15 @@ export class ReminderDrawerComponent implements OnDestroy {
   reminderGroupStatus = ReminderGroupStatus;
   groupIsExpanded: boolean[] = [true, true, false];
 
+  get contextFilterEnabled(): boolean {
+    return this._contextFilterEnabled;
+  }
+  set contextFilterEnabled(enabled: boolean) {
+    this._contextFilterEnabled = enabled;
+    this.setConfig('useContext');
+    this.filterByType();
+  }
+
   get open(): boolean {
     return this._open;
   }
@@ -50,17 +61,21 @@ export class ReminderDrawerComponent implements OnDestroy {
     this.open$.next(openStatus);
   }
 
+  private context?: string;
   private subscriptions = new Subscription();
   private rightDrawerOpen = false;
   private updateTimer?: NodeJS.Timeout;
   private _open = false;
   private _previousState: Reminder['id'][][] = [];
+  private _contextFilterEnabled =
+    REMINDER_LOCAL_STORAGE_DEFAULT_CONFIG.useContext;
 
   constructor(
     private alertService: AlertService,
     private headerService: HeaderService,
     private modalService: BsModalService,
-    private reminderService: ReminderService
+    private reminderService: ReminderService,
+    private router: Router
   ) {
     this.getReminderTypes();
     this.initSubscriptions();
@@ -77,7 +92,8 @@ export class ReminderDrawerComponent implements OnDestroy {
     });
   }
 
-  setFilter(type?: ReminderType['id']): void {
+  async setFilter(type?: ReminderType['id']): Promise<void> {
+    await this.sleep(1000);
     if (type) this.reminderTypeFilter = type;
 
     this.setConfig('filter');
@@ -87,28 +103,35 @@ export class ReminderDrawerComponent implements OnDestroy {
   filterByType(): void {
     if (!this.types.length) return;
 
-    this.reminderGroups = this.reminderService.groupReminders(this.reminders);
+    this.reminderGroups = this.reminderService.groupReminders(
+      this.reminders,
+      this.contextFilterEnabled ? this.context : null
+    );
   }
 
   setConfig(configOption: string) {
-    let value: any;
+    let value;
+
     switch (configOption) {
       case 'filter':
-        // this.reminderGroups = this.reminderService.groupReminders(this.reminders);
-        value = { reminderType: this.reminderTypeFilter };
+        value = {
+          reminderType: this.reminderTypeFilter,
+        };
+        break;
+      case 'useContext':
+        value = this._contextFilterEnabled;
         break;
       case 'toast':
-        value = this.toastNotificationsEnabled;
+         value = this.toastNotificationsEnabled;
         break;
       case 'browser':
-        value = this.browserNotificationsEnabled;
+         value = this.browserNotificationsEnabled;
         break;
     }
-
     this.reminderService.setConfig(configOption, value);
   }
 
-  toggle(open?: boolean): boolean {
+  toggleDrawer(open?: boolean): boolean {
     open = typeof open === 'boolean' ? open : !this.open;
 
     this.open = open;
@@ -133,13 +156,39 @@ export class ReminderDrawerComponent implements OnDestroy {
   }
 
   private handleConfigChange(config: ReminderConfig): void {
-    if (has(config.filter, 'remidnerType') && this.reminderTypeFilter !== config.filter?.reminderType) {
+    if (
+      has(config.filter, 'reminderType') &&
+      this.reminderTypeFilter !== config.filter?.reminderType
+    ) {
       this.reminderTypeFilter = config.filter.reminderType;
       this.filterByType();
     }
 
+    this._contextFilterEnabled = config.useContext;
     this.toastNotificationsEnabled = config.toast;
     this.browserNotificationsEnabled = config.browser;
+  }
+
+  private handleRouteChange(url): void {
+    if (isEmpty(url)) {
+      return undefined;
+    }
+
+    const pathElements = url.split('/').filter((element) => !isEmpty(element));
+
+    if (pathElements === null || pathElements.length === 0) {
+      return undefined;
+    }
+
+    this.context =
+      pathElements.length >= 2 &&
+      REMINDER_ASSET_CONTEXT_ROOTS.includes(pathElements[0])
+        ? pathElements[1]
+        : '';
+    this.reminderGroups = this.reminderService.groupReminders(
+      this.reminders,
+      this.context
+    );
   }
 
   private highlightChanges(): void {
@@ -191,6 +240,16 @@ export class ReminderDrawerComponent implements OnDestroy {
         this.handleConfigChange(config)
       )
     );
+
+    // route change for context
+    this.subscriptions.add(
+      this.router.events.subscribe({
+        next: (event) => {
+          // TODO debounce
+          if (event instanceof NavigationEnd) this.handleRouteChange(event.url);
+        },
+      })
+    );
   }
 
   private toggleRightDrawer(open: boolean): void {
@@ -224,5 +283,9 @@ export class ReminderDrawerComponent implements OnDestroy {
     } else {
       this.alertService.danger('Could not update reminder', res.statusText);
     }
+  }
+
+  private sleep(milliseconds: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, milliseconds));
   }
 }
