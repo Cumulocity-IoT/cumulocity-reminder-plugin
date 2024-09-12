@@ -197,7 +197,8 @@ export class ReminderService {
   ): ReminderGroup[] {
     const config = this.config$.getValue();
 
-    if (!has(config, 'useContext') || !config.useContext) return groups;
+    if (!has(config, 'useContext') || !config.useContext || !context)
+      return groups;
 
     groups.map((group) => {
       group.total = group.reminders.length;
