@@ -1,5 +1,5 @@
 import type { ConfigurationOptions } from '@c8y/devkit';
-import { author, description, version, name } from './package.json';
+import { author, description, version } from './package.json';
 
 export default {
   runTime: {
