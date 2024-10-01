@@ -1,6 +1,6 @@
 {
   "name": "cumulocity-reminder-plugin",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "",
   "scripts": {
     "start": "ng serve -u https://psfactory.eu-latest.cumulocity.com",
