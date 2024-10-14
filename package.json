@@ -25,12 +25,12 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SoftwareAG/cumulocity-reminder-plugin.git"
+    "url": "git+https://github.com/Cumulocity-IoT/cumulocity-reminder-plugin.git"
   },
   "bugs": {
-    "url": "https://github.com/SoftwareAG/cumulocity-reminder-plugin/issues"
+    "url": "https://github.com/Cumulocity-IoT/cumulocity-reminder-plugin/issues"
   },
-  "homepage": "https://github.com/SoftwareAG/cumulocity-reminder-plugin#readme",
+  "homepage": "https://github.com/Cumulocity-IoT/cumulocity-reminder-plugin#readme",
   "dependencies": {
     "@angular/animations": "^17.3.0",
     "@angular/cdk": "^17.3.9",
